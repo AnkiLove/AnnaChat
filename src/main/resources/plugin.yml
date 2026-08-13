@@ -1,0 +1,56 @@
+name: AnnaChat
+version: '${version}'
+main: dev.annachat.AnnaChat
+description: 面向 Paper 26.x 的模块化聊天管理插件
+api-version: '26.1'
+load: POSTWORLD
+folia-supported: true
+softdepend:
+  - PlaceholderAPI
+commands:
+  annachat:
+    description: AnnaChat 主命令
+    usage: /annachat help
+    aliases: [ ac, achat ]
+permissions:
+  annachat.use:
+    default: true
+  annachat.channel.use.*:
+    default: true
+  annachat.command.channel:
+    default: true
+  annachat.command.toggle:
+    default: true
+  annachat.command.friend:
+    default: true
+  annachat.channel.use.global:
+    default: true
+  annachat.channel.use.local:
+    default: true
+  annachat.channel.use.friends:
+    default: true
+  annachat.chat.color:
+    default: op
+  annachat.chat.minimessage:
+    default: op
+  annachat.chat.placeholders:
+    default: op
+  annachat.bypass.cooldown:
+    default: op
+  annachat.bypass.filter:
+    default: op
+  annachat.bypass.moderation:
+    # 默认连 OP 也参与审核；需要绕过时请显式授予此权限。
+    default: false
+  annachat.admin.reload:
+    default: op
+  annachat.admin.mute:
+    default: op
+  annachat.admin.spy:
+    default: op
+  annachat.admin.history:
+    default: op
+  annachat.admin.preview:
+    default: op
+  annachat.admin.notify:
+    default: op

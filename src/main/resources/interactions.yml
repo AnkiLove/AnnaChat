@@ -1,0 +1,43 @@
+# 聊天正文交互规则，修改后可热重载。
+# 规则按 priority 从小到大执行；同一位置只采用优先级最高的匹配。
+# pattern 为 Java 正则表达式。
+# {match} 代表完整匹配，{group:1}、{group:2} 代表正则捕获组。
+# text、hover、click.value 和 insertion 均支持 AnnaChat 变量与 PlaceholderAPI。
+interactions:
+  link:
+    # false 时保留配置但不加载规则。
+    enabled: true
+    # 数值越小越优先。
+    priority: 100
+    pattern: '(?i)https?://[^\s<>]+'
+    text: '<aqua><underlined>{match}</underlined></aqua>'
+    hover:
+      - '<gray>点击打开链接</gray>'
+      - '<white>{match}</white>'
+    click:
+      # 链接使用 OPEN_URL；命令可用 RUN_COMMAND 或 SUGGEST_COMMAND。
+      action: OPEN_URL
+      value: '{match}'
+
+  mention:
+    enabled: true
+    priority: 200
+    pattern: '@([A-Za-z0-9_]{1,16})'
+    text: '<yellow>{match}</yellow>'
+    hover:
+      - '<gray>点击填入私聊命令</gray>'
+    click:
+      action: SUGGEST_COMMAND
+      value: '/msg {group:1} '
+    insertion: '{group:1}'
+
+  command:
+    enabled: true
+    priority: 300
+    pattern: '(?<!\S)/[A-Za-z0-9_:.-]+'
+    text: '<white>{match}</white>'
+    hover:
+      - '<gray>点击填入该命令</gray>'
+    click:
+      action: SUGGEST_COMMAND
+      value: '{match} '

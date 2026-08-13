@@ -1,0 +1,16 @@
+# 自定义 AnnaChat 占位符
+#
+# 插件内部格式写法：{custom:键名}
+# PlaceholderAPI 写法：%annachat_custom_键名%
+# 值支持 AnnaChat 内置变量和其他 PlaceholderAPI 变量。
+# 修改后执行 /annachat reload 即可生效。
+# 键名只能包含小写字母、数字和下划线。
+# 循环引用会被安全终止并输出空字符串。
+#
+# 可用内置变量：
+# {player} {display_name} {uuid} {world} {x} {y} {z}
+# {channel} {channel_display} {radius} {online}
+custom-placeholders:
+  server_status: '<green>在线</green>'
+  player_position: '{world} {x}, {y}, {z}'
+  current_channel: '{channel_display}'

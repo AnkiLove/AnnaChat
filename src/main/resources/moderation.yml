@@ -1,0 +1,69 @@
+# AnnaChat 分类内容审核
+# 修改后执行 /annachat reload 即可热重载，无需重启服务器。
+#
+# 工作方式：
+# 1. 命中词条后阻止该消息进入频道。
+# 2. 向发送者显示警告，并统计警告窗口内的次数。
+# 3. database.yml 开启 MySQL 且 logging.moderation=true 时，
+#    将未经替换的完整原文写入 annachat_moderation_logs。
+#
+# 词库只从本地文件读取，不会自动访问远程地址或覆盖管理员维护的内容。
+enabled: true
+
+# 拥有此权限的玩家完全跳过分类内容审核。
+bypass-permission: annachat.bypass.moderation
+
+matching:
+  # 忽略空格、换行和全角空格，可识别“敏 感 词”一类绕过。
+  ignore-whitespace: true
+  # 忽略中英文标点及常见符号，可识别“敏-感.词”一类绕过。
+  ignore-punctuation: true
+  # 无论上面两个开关如何，这里的字符始终从匹配文本中移除。
+  ignored-characters:
+    - '·'
+    - '_'
+    - '-'
+
+warnings:
+  # 超过此秒数未再次违规后，玩家的警告次数从 1 重新计算。
+  reset-after-seconds: 300
+  # 控制台只记录玩家、频道、分类和次数，不输出敏感原文。
+  # 完整明文仅保存到启用的 MySQL 审计表。
+  console-notify: true
+
+# 分类按 priority 从小到大判定；同位置命中时优先使用优先级更高的分类，
+# 同一分类优先命中更长词条。词条匹配不区分英文字母大小写，并执行 NFKC
+# Unicode 归一化，因此全角英文和全角数字也能被识别。
+categories:
+  profanity:
+    enabled: true
+    display-name: 不文明用语
+    priority: 100
+    reason: 请勿发送辱骂、脏话或针对他人的不文明内容
+    words:
+      - '操你妈'
+      - '草泥马'
+      - '傻逼'
+      - '煞笔'
+      - '妈的'
+      - '尼玛'
+      - 'fuck'
+      - 'shit'
+    # 白名单短语覆盖到命中位置时，该处不拦截；不要添加过短的白名单。
+    whitelist: []
+
+  political:
+    enabled: true
+    display-name: 涉政言论
+    priority: 200
+    reason: 当前服务器不允许发布涉政、煽动或极端政治言论
+    words:
+      - '颠覆政权'
+      - '推翻政府'
+      - '武装暴动'
+      - '煽动暴乱'
+      - '台独'
+      - '港独'
+      - '藏独'
+      - '法轮功'
+    whitelist: []

@@ -1,0 +1,30 @@
+# 命令帮助页面，支持 MiniMessage 点击与悬停标签。
+# 修改后执行 /annachat reload 即可生效。
+# 帮助页强调色固定为青色，保持全部分页风格一致。
+help:
+  header: '<gray><dark_gray>[</dark_gray><aqua>AnnaChat</aqua><dark_gray>]</dark_gray> 命令帮助 <dark_gray>-</dark_gray> 第 <aqua>{page}</aqua>/<aqua>{pages}</aqua> 页</gray>'
+  footer: '<dark_gray>上一页：</dark_gray><click:run_command:"/annachat help {previous}"><aqua>[{previous}]</aqua></click> <dark_gray>| 当前 <gray>{page}/{pages}</gray> | 下一页：</dark_gray><click:run_command:"/annachat help {next}"><aqua>[{next}]</aqua></click>'
+  category:
+    common: '<aqua>常用命令</aqua>'
+    friend: '<aqua>好友管理</aqua>'
+    manage: '<aqua>管理命令</aqua>'
+    inspect: '<aqua>检查工具</aqua>'
+  pages:
+    '1':
+      - '<dark_gray>•</dark_gray> <click:suggest_command:"/annachat help "><aqua>/annachat help [页]</aqua></click> <dark_gray>-</dark_gray> <gray>查看分页帮助</gray>'
+      - '<dark_gray>•</dark_gray> <click:suggest_command:"/annachat channel "><aqua>/annachat channel <频道></aqua></click> <dark_gray>-</dark_gray> <gray>切换默认频道</gray>'
+      - '<dark_gray>•</dark_gray> <click:suggest_command:"/annachat toggle "><aqua>/annachat toggle <频道></aqua></click> <dark_gray>-</dark_gray> <gray>接收或屏蔽频道</gray>'
+      - '<dark_gray>•</dark_gray> <click:suggest_command:"/annachat friend "><aqua>/annachat friend</aqua></click> <dark_gray>-</dark_gray> <gray>查看好友列表</gray>'
+    '2':
+      - '<dark_gray>•</dark_gray> <click:suggest_command:"/annachat friend add "><aqua>/annachat friend add <玩家></aqua></click> <dark_gray>-</dark_gray> <gray>发送好友申请</gray>'
+      - '<dark_gray>•</dark_gray> <click:run_command:"/annachat friend requests"><aqua>/annachat friend requests</aqua></click> <dark_gray>-</dark_gray> <gray>查看并处理好友申请</gray>'
+      - '<dark_gray>•</dark_gray> <click:suggest_command:"/annachat friend remove "><aqua>/annachat friend remove <玩家></aqua></click> <dark_gray>-</dark_gray> <gray>解除好友关系</gray>'
+      - '<dark_gray>•</dark_gray> <click:suggest_command:"/annachat channel friends"><aqua>/annachat channel friends</aqua></click> <dark_gray>-</dark_gray> <gray>切换到好友频道</gray>'
+    '3':
+      - '<dark_gray>•</dark_gray> <click:suggest_command:"/annachat mute "><aqua>/annachat mute <玩家> [时长] [原因]</aqua></click> <dark_gray>-</dark_gray> <gray>禁言玩家，例如 30m、2h、永久</gray>'
+      - '<dark_gray>•</dark_gray> <click:suggest_command:"/annachat unmute "><aqua>/annachat unmute <玩家></aqua></click> <dark_gray>-</dark_gray> <gray>解除禁言</gray>'
+      - '<dark_gray>•</dark_gray> <click:run_command:"/annachat spy"><aqua>/annachat spy</aqua></click> <dark_gray>-</dark_gray> <gray>切换频道监听</gray>'
+      - '<dark_gray>•</dark_gray> <click:run_command:"/annachat reload"><aqua>/annachat reload</aqua></click> <dark_gray>-</dark_gray> <gray>异步校验并热重载全部配置</gray>'
+    '4':
+      - '<dark_gray>•</dark_gray> <click:suggest_command:"/annachat history "><aqua>/annachat history [页]</aqua></click> <dark_gray>-</dark_gray> <gray>查看聊天历史</gray>'
+      - '<dark_gray>•</dark_gray> <click:suggest_command:"/annachat preview "><aqua>/annachat preview <格式> [消息]</aqua></click> <dark_gray>-</dark_gray> <gray>预览聊天格式与交互</gray>'

@@ -1,0 +1,27 @@
+# 消息过滤器，按 priority 从小到大执行。
+# type 可选 CONTAINS、REGEX。
+# action 可选：
+# ALLOW   允许并继续后续规则
+# REPLACE 替换匹配内容后继续处理
+# BLOCK   阻止消息并向发送者显示 reason
+# SHADOW  仅发送者自己能看到消息
+filters:
+  repeated-characters:
+    enabled: true
+    priority: 100
+    type: REGEX
+    # Java 正则表达式。YAML 单引号内的反斜杠无需加倍。
+    pattern: '(.)\1{14,}'
+    action: BLOCK
+    reason: 请勿连续重复同一字符
+
+  example-word:
+    enabled: false
+    priority: 200
+    type: CONTAINS
+    pattern: '示例词'
+    # 仅 CONTAINS 和 REGEX 匹配时生效。
+    ignore-case: true
+    action: REPLACE
+    replacement: '***'
+    reason: 包含受限内容

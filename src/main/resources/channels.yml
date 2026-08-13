@@ -1,0 +1,43 @@
+# 频道配置。增删或修改后执行 /annachat reload。
+# audience 可选值：
+# GLOBAL  全部在线玩家
+# LOCAL   同世界指定半径内玩家
+# FRIENDS 发送者本人及其双向好友
+schema-version: 2
+channels:
+  global:
+    # 显示名称，可在格式中通过 {channel_display} 使用。
+    display-name: 全服
+    # 发送频道需要的权限。留空表示无需权限。
+    permission: annachat.channel.use.global
+    # formats.yml 中的格式 ID。
+    format: global
+    audience: GLOBAL
+    # 发送冷却，单位毫秒；0 表示无冷却。
+    cooldown-millis: 1000
+    # 预留给 API 和管理界面的排序值，数值越小越靠前。
+    priority: 100
+    # false 时频道不可发送，但配置仍会保留。
+    enabled: true
+
+  local:
+    display-name: 附近
+    permission: annachat.channel.use.local
+    format: local
+    audience: LOCAL
+    # LOCAL 频道可见半径，按发送者坐标与接收者坐标计算。
+    radius: 80
+    # LOCAL 目前始终要求同世界；保留该项供自定义接收器读取。
+    same-world: true
+    cooldown-millis: 500
+    priority: 90
+    enabled: true
+
+  friends:
+    display-name: 好友
+    permission: annachat.channel.use.friends
+    format: friends
+    audience: FRIENDS
+    cooldown-millis: 500
+    priority: 80
+    enabled: true

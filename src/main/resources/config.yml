@@ -1,0 +1,90 @@
+# AnnaChat 主配置
+# 修改后执行 /annachat reload 即可热重载，无需重启服务器。
+# 热重载会先异步读取并校验全部 YAML；配置有误时继续保留当前运行配置。
+settings:
+  # 新玩家首次聊天使用的频道 ID，必须存在于 channels.yml。
+  default-channel: global
+  # Paper AsyncChatEvent 监听优先级：LOWEST、LOW、NORMAL、HIGH、HIGHEST、MONITOR。
+  chat-event-priority: HIGHEST
+  # 玩家保存的频道已被删除时，是否拦截聊天并提示错误。
+  cancel-when-no-channel: true
+  # 频道内只有发送者时是否额外提示。默认关闭，避免单人测试或空频道刷屏。
+  notify-when-no-other-recipients: false
+  # 是否把聊天正文输出到服务端控制台；与 MySQL 记录开关相互独立。
+  log-chat: true
+  # 内存聊天历史上限，供 /annachat history 使用；服务器重启后清空。
+  history-size: 200
+  # 频道未单独配置 cooldown-millis 时采用此值。
+  default-cooldown-millis: 1000
+  # 按 Unicode 字符数限制正文长度。
+  max-message-length: 256
+  # 是否允许控制台使用预览功能；预览仍需要玩家上下文时会提示仅玩家可用。
+  allow-console-preview: true
+
+# 输入前缀仅临时切换本条消息的频道，不改变玩家默认频道
+quick-switch:
+  '!': global
+  '@': local
+  '#': friends
+
+# 玩家拥有对应权限时可使用旧式颜色与 MiniMessage
+formatting:
+  # 允许玩家在聊天正文中使用 &a、&#RRGGBB 等旧式颜色。
+  legacy-color-permission: annachat.chat.color
+  # 允许玩家在聊天正文中使用 MiniMessage 标签。
+  minimessage-permission: annachat.chat.minimessage
+  # 玩家直接在聊天正文中输入 PAPI 变量所需权限，例如 %player_health%
+  player-message-placeholders-permission: annachat.chat.placeholders
+  strip-unknown-tags: true
+
+storage:
+  # data.yml 自动保存间隔，最低 30 秒；文件 I/O 在异步线程执行。
+  autosave-seconds: 120
+
+messages:
+  # 此处支持 MiniMessage；发送给玩家时也支持 PlaceholderAPI。
+  prefix: '<dark_gray>[<aqua>AnnaChat</aqua>]</dark_gray> '
+  no-permission: '<red>你没有权限执行此操作。</red>'
+  player-only: '<red>此命令只能由玩家执行。</red>'
+  channel-not-found: '<red>频道 <white>{channel}</white> 不存在。</red>'
+  channel-denied: '<red>你无权使用频道 <white>{channel}</white>。</red>'
+  channel-selected: '<gray>默认频道已切换为 <aqua>{channel}</aqua>。</gray>'
+  channel-hidden: '<gray>已屏蔽频道 <aqua>{channel}</aqua>。</gray>'
+  channel-visible: '<gray>已恢复接收频道 <aqua>{channel}</aqua>。</gray>'
+  friend-usage: '<gray>好友命令：<aqua>/annachat friend add|accept|deny|remove|list|requests</aqua></gray>'
+  friend-self: '<red>不能向自己发送好友申请。</red>'
+  friend-already: '<yellow>你和 {player} 已经是好友。</yellow>'
+  friend-request-exists: '<yellow>你已经向 {player} 发送过好友申请。</yellow>'
+  friend-request-sent: '<gray>已向 <aqua>{player}</aqua> 发送好友申请。</gray>'
+  friend-request-received: '<gray><aqua>{player}</aqua> 请求添加你为好友。 <click:run_command:"/annachat friend accept {player}"><aqua>[接受]</aqua></click> <click:run_command:"/annachat friend deny {player}"><red>[拒绝]</red></click></gray>'
+  friend-request-missing: '<yellow>没有找到来自 {player} 的好友申请。</yellow>'
+  friend-accepted: '<gray>你和 <aqua>{player}</aqua> 现在是好友了。</gray>'
+  friend-accepted-by: '<gray><aqua>{player}</aqua> 接受了你的好友申请。</gray>'
+  friend-denied: '<gray>已拒绝 <white>{player}</white> 的好友申请。</gray>'
+  friend-not-found: '<yellow>{player} 不在你的好友列表中。</yellow>'
+  friend-removed: '<gray>已解除与 <white>{player}</white> 的好友关系。</gray>'
+  friend-removed-by: '<gray><white>{player}</white> 解除了与你的好友关系。</gray>'
+  friend-list-empty: '<gray>你的好友列表为空。</gray>'
+  friend-list-header: '<gray>好友列表，共 <aqua>{count}</aqua> 人：</gray>'
+  friend-requests-empty: '<gray>当前没有待处理的好友申请。</gray>'
+  friend-requests-header: '<gray>待处理好友申请，共 <aqua>{count}</aqua> 条：</gray>'
+  muted: '<red>你已被禁言，剩余 <white>{remaining}</white>，原因：<white>{reason}</white></red>'
+  cooldown: '<yellow>发送过快，请等待 {remaining} 秒。</yellow>'
+  too-long: '<red>消息过长，最多允许 {max} 个字符。</red>'
+  blocked: '<red>消息未通过聊天规则：<white>{reason}</white></red>'
+  no-recipients: '<yellow>当前频道内没有其他接收者。</yellow>'
+  player-not-found: '<red>找不到在线玩家 <white>{player}</white>。</red>'
+  invalid-duration: '<red>时长格式无效，可使用 30m、2h、7d 或 永久。</red>'
+  invalid-page: '<red>页码无效。</red>'
+  usage: '<red>参数有误，请点击运行 <click:run_command:"/annachat help"><aqua>/annachat help</aqua></click> 查看帮助。</red>'
+  reload-started: '<gray>正在异步读取并校验全部配置……</gray>'
+  reload-busy: '<yellow>已有一个热重载任务正在执行。</yellow>'
+  reload-success: '<green>热重载完成：{channels} 个频道、{formats} 个格式、{placeholders} 个自定义占位符、{moderation_words} 个审核词条。</green>'
+  reload-failed: '<red>重载失败，当前配置未被替换。请查看控制台。</red>'
+  # 不展示具体命中词，避免玩家利用提示反复试探词库。
+  moderation-blocked: '<red>消息已被屏蔽并记录。</red> <gray>分类：<white>{category}</white>；原因：{reason}；本轮警告次数：<yellow>{count}</yellow>。</gray>'
+  mute-success: '<gray>已禁言 <aqua>{player}</aqua>，时长 <white>{duration}</white>。</gray>'
+  unmute-success: '<gray>已解除 <aqua>{player}</aqua> 的禁言。</gray>'
+  not-muted: '<yellow>{player} 当前没有被禁言。</yellow>'
+  spy-enabled: '<gray>频道监听已<aqua>开启</aqua>。</gray>'
+  spy-disabled: '<gray>频道监听已<red>关闭</red>。</gray>'

@@ -1,0 +1,78 @@
+# 格式由多个片段顺序拼接。type 可使用 text、message，附属插件可注册更多类型。
+# text 片段：
+#   content   MiniMessage 正文
+#   hover     鼠标悬停文字列表
+#   click     点击事件；action 可用 RUN_COMMAND、SUGGEST_COMMAND、OPEN_URL、COPY_TO_CLIPBOARD
+#   insertion Shift+单击插入聊天框的文字
+# message 片段：
+#   style     玩家消息的外层 MiniMessage 样式
+#
+# 内置变量：{player} {display_name} {uuid} {world} {x} {y} {z}
+#          {channel} {channel_display} {radius} {online}
+# 自定义变量：{custom:键名}
+# 同时支持 PlaceholderAPI，例如 %player_prefix%。
+schema-version: 2
+formats:
+  global:
+    parts:
+      - type: text
+        content: '<dark_gray>[<aqua>{channel_display}</aqua>]</dark_gray> '
+        hover:
+          - '<gray>点击切换到全服频道</gray>'
+        click:
+          action: RUN_COMMAND
+          value: '/annachat channel global'
+      - type: text
+        content: '<white>{player}</white>'
+        hover:
+          - '<gray>玩家：<white>{player}</white></gray>'
+          - '<gray>世界：<white>{world}</white></gray>'
+          - '<gray>坐标：<white>{x}, {y}, {z}</white></gray>'
+          - ''
+          - '<aqua>点击填入私聊命令</aqua>'
+        click:
+          action: SUGGEST_COMMAND
+          value: '/msg {player} '
+        insertion: '{player}'
+      - type: text
+        content: '<dark_gray> » </dark_gray>'
+      - type: message
+        style: '<gray>'
+
+  local:
+    parts:
+      - type: text
+        content: '<dark_gray>[<yellow>{channel_display}</yellow>]</dark_gray> '
+        hover:
+          - '<gray>仅 {radius} 格内玩家可见</gray>'
+        click:
+          action: RUN_COMMAND
+          value: '/annachat channel local'
+      - type: text
+        content: '<white>{player}</white><dark_gray> » </dark_gray>'
+        hover:
+          - '<gray>点击填入私聊命令</gray>'
+        click:
+          action: SUGGEST_COMMAND
+          value: '/msg {player} '
+      - type: message
+        style: '<gray>'
+
+  friends:
+    parts:
+      - type: text
+        content: '<dark_gray>[<#FFB7C5>好友</#FFB7C5>]</dark_gray> '
+        hover:
+          - '<gray>仅你和在线好友可见</gray>'
+        click:
+          action: RUN_COMMAND
+          value: '/annachat channel friends'
+      - type: text
+        content: '<white>{player}</white><dark_gray> » </dark_gray>'
+        hover:
+          - '<gray>点击填入私聊命令</gray>'
+        click:
+          action: SUGGEST_COMMAND
+          value: '/msg {player} '
+      - type: message
+        style: '<gray>'

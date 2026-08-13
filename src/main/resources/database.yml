@@ -1,0 +1,39 @@
+# MySQL 审计配置，默认关闭。
+# 修改后执行 /annachat reload 可启动、关闭或切换连接池，无需重启。
+# 开启后会自动创建聊天、玩家指令和内容审核记录表。
+enabled: false
+# 区分同一数据库中的不同子服。
+server-id: lobby-1
+# 只能包含字母、数字和下划线。
+table-prefix: annachat_
+
+mysql:
+  host: 127.0.0.1
+  port: 3306
+  database: minecraft
+  username: root
+  password: change_me
+  parameters: 'useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8'
+
+pool:
+  # HikariCP 连接池参数。maximum-pool-size 应根据数据库承载能力设置。
+  minimum-idle: 1
+  maximum-pool-size: 6
+  connection-timeout-millis: 5000
+  idle-timeout-millis: 600000
+  max-lifetime-millis: 1800000
+
+logging:
+  # 聊天和指令可以分别启用。
+  chat: true
+  commands: true
+  # 被 moderation.yml 拦截的消息写入独立审核表；original_message 保留完整明文，
+  # warning_count 保存玩家在当前警告窗口内的累计次数。
+  moderation: true
+  # 不带开头斜杠，忽略大小写；用于排除可能包含密码的命令。
+  command-exclusions:
+    - login
+    - l
+    - register
+    - reg
+    - changepassword
