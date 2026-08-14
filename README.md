@@ -21,7 +21,7 @@ AnnaChat 是面向 Paper 26.1+、Java 25 的模块化聊天管理插件。
 .\gradlew.bat clean build
 ```
 
-产物位于 `out/AnnaChat-1.0.8.jar`。
+产物位于 `out/AnnaChat-1.1.0.jar`。
 
 ## 命令
 

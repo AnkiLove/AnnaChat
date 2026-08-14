@@ -1,6 +1,6 @@
 # 格式由多个片段顺序拼接。type 可使用 text、message，附属插件可注册更多类型。
 # text 片段：
-#   content   MiniMessage 正文
+#   content   MiniMessage 正文；同时支持传统 &0-&f、&k-&r 与 &x 十六进制颜色代码
 #   hover     鼠标悬停文字列表
 #   click     点击事件；action 可用 RUN_COMMAND、SUGGEST_COMMAND、OPEN_URL、COPY_TO_CLIPBOARD
 #   insertion Shift+单击插入聊天框的文字
@@ -11,12 +11,12 @@
 #          {channel} {channel_display} {radius} {online}
 # 自定义变量：{custom:键名}
 # 同时支持 PlaceholderAPI，例如 %player_prefix%。
-schema-version: 2
+schema-version: 4
 formats:
   global:
     parts:
       - type: text
-        content: '<dark_gray>[<aqua>{channel_display}</aqua>]</dark_gray> '
+        content: '&8[<aqua>{channel_display}</aqua>&8] '
         hover:
           - '<gray>点击切换到全服频道</gray>'
         click:
@@ -35,21 +35,21 @@ formats:
           value: '/msg {player} '
         insertion: '{player}'
       - type: text
-        content: '<dark_gray> » </dark_gray>'
+        content: '&8 » '
       - type: message
         style: '<gray>'
 
   local:
     parts:
       - type: text
-        content: '<dark_gray>[<yellow>{channel_display}</yellow>]</dark_gray> '
+        content: '&8[<yellow>{channel_display}</yellow>&8] '
         hover:
           - '<gray>仅 {radius} 格内玩家可见</gray>'
         click:
           action: RUN_COMMAND
           value: '/annachat channel local'
       - type: text
-        content: '<white>{player}</white><dark_gray> » </dark_gray>'
+        content: '<white>{player}</white>&8 » '
         hover:
           - '<gray>点击填入私聊命令</gray>'
         click:
@@ -61,14 +61,14 @@ formats:
   friends:
     parts:
       - type: text
-        content: '<dark_gray>[<#FFB7C5>好友</#FFB7C5>]</dark_gray> '
+        content: '&8[<#FFB7C5>好友</#FFB7C5>&8] '
         hover:
           - '<gray>仅你和在线好友可见</gray>'
         click:
           action: RUN_COMMAND
           value: '/annachat channel friends'
       - type: text
-        content: '<white>{player}</white><dark_gray> » </dark_gray>'
+        content: '<white>{player}</white>&8 » '
         hover:
           - '<gray>点击填入私聊命令</gray>'
         click:

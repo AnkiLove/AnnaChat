@@ -42,8 +42,8 @@ public final class ConfigManager {
     }
 
     /**
-     * 1.0.8 将内置频道精简为全服、附近和好友。仅迁移旧架构文件，并先创建
-     * 可恢复备份；升级完成后的自定义配置不会在以后启动时重复改写。
+     * 迁移内置频道与格式：1.0.8 精简为全服、附近和好友，1.1.0 将旧默认格式
+     * 改为传统 & 颜色码。两类迁移均只处理已知旧值，避免覆盖自定义配置。
      */
     private void migrateLegacyChannelDefaults() {
         File channelFile = new File(plugin.getDataFolder(), "channels.yml");
@@ -55,39 +55,89 @@ public final class ConfigManager {
         boolean oldChannels = channels.getInt("schema-version", 1) < 2;
         boolean oldFormats = formats.getInt("schema-version", 1) < 2;
         boolean oldQuickSwitch = "staff".equalsIgnoreCase(main.getString("quick-switch.#", ""));
-        if (!oldChannels && !oldFormats && !oldQuickSwitch) return;
+        boolean legacyChannelLayout = oldChannels || oldFormats || oldQuickSwitch;
+        boolean oldFormatColors = formats.getInt("schema-version", 1) < 4;
+        if (!legacyChannelLayout && !oldFormatColors) return;
 
-        backupOnce(channelFile, "channels.yml.pre-1.0.8.bak");
-        backupOnce(formatFile, "formats.yml.pre-1.0.8.bak");
-        backupOnce(mainFile, "config.yml.pre-1.0.8.bak");
-
-        YamlConfiguration bundledChannels = loadBundled("channels.yml");
-        channels.set("channels.world", null);
-        channels.set("channels.staff", null);
-        if (!channels.isConfigurationSection("channels.friends")) {
-            copySection(bundledChannels, channels, "channels.friends");
+        if (legacyChannelLayout) {
+            backupOnce(channelFile, "channels.yml.pre-1.0.8.bak");
+            backupOnce(formatFile, "formats.yml.pre-1.0.8.bak");
+            backupOnce(mainFile, "config.yml.pre-1.0.8.bak");
         }
-        channels.set("schema-version", 2);
+        if (oldFormatColors) backupOnce(formatFile, "formats.yml.pre-1.1.0.bak");
 
-        YamlConfiguration bundledFormats = loadBundled("formats.yml");
-        formats.set("formats.world", null);
-        formats.set("formats.staff", null);
-        if (!formats.isConfigurationSection("formats.friends")) {
-            copySection(bundledFormats, formats, "formats.friends");
-        }
-        formats.set("schema-version", 2);
+        if (legacyChannelLayout) {
+            YamlConfiguration bundledChannels = loadBundled("channels.yml");
+            channels.set("channels.world", null);
+            channels.set("channels.staff", null);
+            if (!channels.isConfigurationSection("channels.friends")) {
+                copySection(bundledChannels, channels, "channels.friends");
+            }
+            channels.set("schema-version", 2);
 
-        if ("staff".equalsIgnoreCase(main.getString("quick-switch.#", ""))) {
-            main.set("quick-switch.#", "friends");
+            YamlConfiguration bundledFormats = loadBundled("formats.yml");
+            formats.set("formats.world", null);
+            formats.set("formats.staff", null);
+            if (!formats.isConfigurationSection("formats.friends")) {
+                copySection(bundledFormats, formats, "formats.friends");
+            }
+
+            if ("staff".equalsIgnoreCase(main.getString("quick-switch.#", ""))) {
+                main.set("quick-switch.#", "friends");
+            }
         }
+        if (oldFormatColors) {
+            migrateDefaultFormatColors(formats);
+        }
+        formats.set("schema-version", 4);
         try {
             channels.save(channelFile);
             formats.save(formatFile);
             main.save(mainFile);
-            plugin.getLogger().info("已将旧频道配置迁移为全服、附近和好友频道；原文件已备份");
+            plugin.getLogger().info(legacyChannelLayout
+                    ? "已将旧频道配置迁移为全服、附近和好友频道；原文件已备份"
+                    : "已将旧默认聊天格式迁移为 & 颜色码；原格式文件已备份");
         } catch (IOException exception) {
-            throw new IllegalStateException("保存 1.0.8 频道迁移配置失败", exception);
+            throw new IllegalStateException("保存频道或格式迁移配置失败", exception);
         }
+    }
+
+    /**
+     * 只替换 1.0.8 的原始默认值。管理员已经修改过的格式会保留，避免升级时
+     * 意外重写服务器的视觉配置。
+     */
+    private static void migrateDefaultFormatColors(YamlConfiguration formats) {
+        replaceExactInFormatPart(formats, "global", 0,
+                "<dark_gray>[<aqua>{channel_display}</aqua>]</dark_gray> ",
+                "&8[<aqua>{channel_display}</aqua>&8] ");
+        replaceExactInFormatPart(formats, "global", 2, "<dark_gray> » </dark_gray>", "&8 » ");
+        replaceExactInFormatPart(formats, "local", 0,
+                "<dark_gray>[<yellow>{channel_display}</yellow>]</dark_gray> ",
+                "&8[<yellow>{channel_display}</yellow>&8] ");
+        replaceExactInFormatPart(formats, "local", 1,
+                "<white>{player}</white><dark_gray> » </dark_gray>", "<white>{player}</white>&8 » ");
+        replaceExactInFormatPart(formats, "friends", 0,
+                "<dark_gray>[<#FFB7C5>好友</#FFB7C5>]</dark_gray> ",
+                "&8[<#FFB7C5>好友</#FFB7C5>&8] ");
+        replaceExactInFormatPart(formats, "friends", 1,
+                "<white>{player}</white><dark_gray> » </dark_gray>", "<white>{player}</white>&8 » ");
+    }
+
+    private static void replaceExactInFormatPart(YamlConfiguration configuration, String formatId, int partIndex,
+                                                 String oldValue, String newValue) {
+        String path = "formats." + formatId + ".parts";
+        List<Map<?, ?>> rawParts = configuration.getMapList(path);
+        if (partIndex < 0 || partIndex >= rawParts.size() || !oldValue.equals(rawParts.get(partIndex).get("content"))) {
+            return;
+        }
+        List<Map<String, Object>> updatedParts = new ArrayList<>();
+        for (Map<?, ?> rawPart : rawParts) {
+            Map<String, Object> copy = new LinkedHashMap<>();
+            rawPart.forEach((key, value) -> copy.put(String.valueOf(key), value));
+            updatedParts.add(copy);
+        }
+        updatedParts.get(partIndex).put("content", newValue);
+        configuration.set(path, updatedParts);
     }
 
     private YamlConfiguration loadBundled(String name) {

@@ -161,7 +161,7 @@ public final class TextService {
     }
 
     public Component configured(ChatContext context, String input) {
-        return miniMessage.deserialize(miniMessageSafe(expand(context, input)));
+        return miniMessage.deserialize(configuredMiniMessageSafe(expand(context, input)));
     }
 
     public Component playerText(ChatContext context, String input, String style) {
@@ -212,29 +212,44 @@ public final class TextService {
     }
 
     public Component parseRaw(String miniMessageText) {
-        return miniMessage.deserialize(miniMessageSafe(miniMessageText));
+        return miniMessage.deserialize(configuredMiniMessageSafe(miniMessageText));
     }
 
     /**
-     * 把第三方占位符常见的旧式 {@code §} 颜色码转换为 MiniMessage 标签。
+     * 配置渲染专用：把传统 {@code &} / {@code §} 颜色码转换为 MiniMessage 标签。
      *
-     * <p>转换发生在最终反序列化边界，不改变点击命令或插入文本中的原始值。
-     * 支持 0-9、a-f、k-o、r 以及 {@code §x§R§R§G§G§B§B} 十六进制格式。
-     * 普通的 {@code &} 字符不会被解释，避免误伤自然文本和 URL 参数。</p>
+     * <p>此方法只供 formats.yml、config.yml 等受管理员控制的配置文本调用，不影响
+     * 玩家原始聊天正文，也不改变点击命令或插入文本。支持 0-9、a-f、k-o、r，
+     * 以及 {@code &x&F&F&0&0&A&A} / {@code §x§F§F§0§0§A§A} 十六进制格式。</p>
+     */
+    public String configuredMiniMessageSafe(String input) {
+        return miniMessageSafe(input, true);
+    }
+
+    /**
+     * 玩家允许使用 MiniMessage 时的安全预处理：仅兼容第三方占位符中的 {@code §}
+     * 颜色码，不把普通聊天中的 {@code &} 当作颜色指令。
      */
     public String miniMessageSafe(String input) {
-        if (input == null || input.isEmpty() || input.indexOf('§') < 0) return input == null ? "" : input;
+        return miniMessageSafe(input, false);
+    }
+
+    private String miniMessageSafe(String input, boolean allowAmpersand) {
+        if (input == null || input.isEmpty()
+                || (input.indexOf('§') < 0 && (!allowAmpersand || input.indexOf('&') < 0))) {
+            return input == null ? "" : input;
+        }
         StringBuilder output = new StringBuilder(input.length() + 16);
         for (int index = 0; index < input.length(); index++) {
             char current = input.charAt(index);
-            if (current != '§' || index + 1 >= input.length()) {
+            if ((current != '§' && (!allowAmpersand || current != '&')) || index + 1 >= input.length()) {
                 output.append(current);
                 continue;
             }
 
             char code = Character.toLowerCase(input.charAt(index + 1));
             if (code == 'x') {
-                String hex = readLegacyHex(input, index);
+                String hex = readLegacyHex(input, index, current);
                 if (hex != null) {
                     output.append("<reset><#").append(hex).append('>');
                     index += 13;
@@ -255,12 +270,12 @@ public final class TextService {
         return output.toString();
     }
 
-    private static String readLegacyHex(String input, int start) {
+    private static String readLegacyHex(String input, int start, char markerCharacter) {
         if (start + 13 >= input.length()) return null;
         StringBuilder hex = new StringBuilder(6);
         for (int pair = 0; pair < 6; pair++) {
             int marker = start + 2 + pair * 2;
-            if (input.charAt(marker) != '§') return null;
+            if (input.charAt(marker) != markerCharacter) return null;
             char digit = input.charAt(marker + 1);
             if (Character.digit(digit, 16) < 0) return null;
             hex.append(digit);

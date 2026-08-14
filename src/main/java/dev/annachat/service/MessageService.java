@@ -31,7 +31,7 @@ public final class MessageService {
         if (audience instanceof Player player) {
             output = textService.expandForPlayer(player, output);
         }
-        return miniMessage.deserialize(textService.miniMessageSafe(output));
+        return miniMessage.deserialize(textService.configuredMiniMessageSafe(output));
     }
 
     public Component component(Audience audience, String key) {
