@@ -172,7 +172,7 @@ public final class AnnaChat extends JavaPlugin {
             history.limit(candidate.historySize());
             messages.apply(candidate);
             runtime.set(candidate);
-            chatListener.register(candidate.eventPriority());
+            chatListener.register(candidate.eventPriority(), candidate.respectCancelledChatEvents());
             database.apply(candidate.database());
             if (autosaveTask != null) autosaveTask.cancel();
             autosaveTask = scheduler.repeatGlobal(state::saveAsync,

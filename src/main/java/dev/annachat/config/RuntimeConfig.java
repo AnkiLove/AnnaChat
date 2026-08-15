@@ -15,6 +15,7 @@ public record RuntimeConfig(
         Map<String, String> quickSwitch,
         String defaultChannel,
         EventPriority eventPriority,
+        boolean respectCancelledChatEvents,
         int historySize,
         int maxMessageLength,
         long defaultCooldownMillis,

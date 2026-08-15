@@ -240,6 +240,7 @@ public final class ConfigManager {
                 Map.copyOf(switches),
                 defaultChannel,
                 priority,
+                mainFile.getBoolean("settings.respect-cancelled-chat-events", false),
                 Math.max(10, mainFile.getInt("settings.history-size", 200)),
                 Math.max(1, mainFile.getInt("settings.max-message-length", 256)),
                 Math.max(0, mainFile.getLong("settings.default-cooldown-millis", 1000)),

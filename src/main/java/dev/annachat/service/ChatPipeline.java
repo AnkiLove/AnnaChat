@@ -52,8 +52,8 @@ public final class ChatPipeline {
         this.messages = messages;
     }
 
-    public void accept(Player sender, String requestedChannel, String rawMessage) {
-        scheduler.onEntity(sender, () -> processOnSenderThread(sender, requestedChannel, rawMessage));
+    public boolean accept(Player sender, String requestedChannel, String rawMessage) {
+        return scheduler.onEntity(sender, () -> processOnSenderThread(sender, requestedChannel, rawMessage));
     }
 
     public void registerPostHandler(PostChatHandler handler) {

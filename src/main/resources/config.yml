@@ -6,6 +6,9 @@ settings:
   default-channel: global
   # Paper AsyncChatEvent 监听优先级：LOWEST、LOW、NORMAL、HIGH、HIGHEST、MONITOR。
   chat-event-priority: HIGHEST
+  # false：AnnaChat 接管被登录保护或其他聊天插件提前取消的事件，避免进服第一句丢失。
+  # true：尊重其他插件的取消结果，不再处理该条消息。AnnaChat 作为主聊天插件时建议保持 false。
+  respect-cancelled-chat-events: false
   # 玩家保存的频道已被删除时，是否拦截聊天并提示错误。
   cancel-when-no-channel: true
   # 频道内只有发送者时是否额外提示。默认关闭，避免单人测试或空频道刷屏。
