@@ -16,6 +16,8 @@ public record RuntimeConfig(
         String defaultChannel,
         EventPriority eventPriority,
         boolean respectCancelledChatEvents,
+        boolean cancelNativeChatEvent,
+        int legacyEventFallbackTicks,
         int historySize,
         int maxMessageLength,
         long defaultCooldownMillis,

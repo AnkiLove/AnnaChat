@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "dev.annachat"
-version = providers.gradleProperty("version").orElse("1.1.1").get()
+version = providers.gradleProperty("version").orElse("1.1.2").get()
 
 repositories {
     mavenCentral()
@@ -21,6 +21,9 @@ repositories {
 dependencies {
     compileOnly("io.papermc.paper:paper-api:26.1.2.build.+")
     compileOnly("me.clip:placeholderapi:2.12.2")
+    testImplementation(platform("org.junit:junit-bom:5.13.4"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     implementation("com.zaxxer:HikariCP:7.0.2")
     runtimeOnly("com.mysql:mysql-connector-j:9.7.0")
 }

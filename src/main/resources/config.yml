@@ -9,6 +9,12 @@ settings:
   # false：AnnaChat 接管被登录保护或其他聊天插件提前取消的事件，避免进服第一句丢失。
   # true：尊重其他插件的取消结果，不再处理该条消息。AnnaChat 作为主聊天插件时建议保持 false。
   respect-cancelled-chat-events: false
+  # false：清空 Paper 原生接收者后由 AnnaChat 广播，其他插件仍能观察事件，推荐保持此值。
+  # true：直接取消 Paper 聊天事件，仅用于必须依赖“事件已取消”状态的特殊兼容场景。
+  cancel-native-chat-event: false
+  # 旧聊天事件未成功转换为 Paper AsyncChatEvent 时，等待多少 tick 后自动回退处理。
+  # 1 tick 可以覆盖进服首句、登录保护和聊天转换链中断，同时不会等待下一条消息。
+  legacy-event-fallback-ticks: 1
   # 玩家保存的频道已被删除时，是否拦截聊天并提示错误。
   cancel-when-no-channel: true
   # 频道内只有发送者时是否额外提示。默认关闭，避免单人测试或空频道刷屏。

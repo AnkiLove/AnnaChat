@@ -41,6 +41,7 @@ public final class AnnaChat extends JavaPlugin {
     private OnlinePlayerService onlinePlayers;
     private RecipientService recipients;
     private ChatPipeline pipeline;
+    private ChatIngressService ingress;
     private DatabaseService database;
     private ChatListener chatListener;
     private AnnaChatApi api;
@@ -71,8 +72,9 @@ public final class AnnaChat extends JavaPlugin {
                 this, scheduler, channels, state, processors, filters, moderation,
                 formats, recipients, history, messages
         );
+        ingress = new ChatIngressService(this, scheduler);
         database = new DatabaseService(this);
-        chatListener = new ChatListener(this);
+        chatListener = new ChatListener(this, ingress);
         api = new AnnaChatApiImpl(this);
 
         state.load();
@@ -106,6 +108,7 @@ public final class AnnaChat extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (ingress != null) ingress.reset();
         if (scheduler != null) scheduler.cancelAll();
         if (state != null) state.saveBlocking();
         if (database != null) database.close();
@@ -172,7 +175,12 @@ public final class AnnaChat extends JavaPlugin {
             history.limit(candidate.historySize());
             messages.apply(candidate);
             runtime.set(candidate);
-            chatListener.register(candidate.eventPriority(), candidate.respectCancelledChatEvents());
+            chatListener.register(
+                    candidate.eventPriority(),
+                    candidate.respectCancelledChatEvents(),
+                    candidate.cancelNativeChatEvent(),
+                    candidate.legacyEventFallbackTicks()
+            );
             database.apply(candidate.database());
             if (autosaveTask != null) autosaveTask.cancel();
             autosaveTask = scheduler.repeatGlobal(state::saveAsync,

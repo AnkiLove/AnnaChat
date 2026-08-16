@@ -241,6 +241,8 @@ public final class ConfigManager {
                 defaultChannel,
                 priority,
                 mainFile.getBoolean("settings.respect-cancelled-chat-events", false),
+                mainFile.getBoolean("settings.cancel-native-chat-event", false),
+                Math.clamp(mainFile.getInt("settings.legacy-event-fallback-ticks", 1), 1, 20),
                 Math.max(10, mainFile.getInt("settings.history-size", 200)),
                 Math.max(1, mainFile.getInt("settings.max-message-length", 256)),
                 Math.max(0, mainFile.getLong("settings.default-cooldown-millis", 1000)),
