@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "dev.annachat"
-version = providers.gradleProperty("version").orElse("1.1.3").get()
+version = providers.gradleProperty("version").orElse("1.1.4").get()
 
 repositories {
     mavenCentral()
