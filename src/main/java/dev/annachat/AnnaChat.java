@@ -10,8 +10,8 @@ import dev.annachat.integration.AnnaChatExpansion;
 import dev.annachat.listener.ChatListener;
 import dev.annachat.listener.CommandLogListener;
 import dev.annachat.listener.ConsoleCommandBridge;
+import dev.annachat.platform.PlatformMode;
 import dev.annachat.service.*;
-import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.ServicePriority;
@@ -26,6 +26,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public final class AnnaChat extends JavaPlugin {
     private final AtomicReference<RuntimeConfig> runtime = new AtomicReference<>();
+    private PlatformMode platformMode;
     private SchedulerService scheduler;
     private ConfigManager configManager;
     private TextService text;
@@ -46,15 +47,27 @@ public final class AnnaChat extends JavaPlugin {
     private ChatListener chatListener;
     private AnnaChatApi api;
     private AnnaChatExpansion placeholderExpansion;
-    private ScheduledTask autosaveTask;
+    private SchedulerService.TaskHandle autosaveTask;
     private final AtomicBoolean reloadInProgress = new AtomicBoolean();
     private final ReentrantReadWriteLock configLock = new ReentrantReadWriteLock();
 
     @Override
     public void onEnable() {
-        scheduler = new SchedulerService(this);
+        final int totalSteps = 10;
+        getLogger().info("========== AnnaChat 启动流程开始 ==========");
+
+        platformMode = PlatformMode.detect();
+        startupStep(1, totalSteps, "平台识别完成：" + platformMode.displayName()
+                + "；服务端=" + platformMode.serverName()
+                + "；版本=" + platformMode.serverVersion());
+
+        scheduler = new SchedulerService(this, platformMode);
+        startupStep(2, totalSteps, "调度模式初始化：" + platformMode.schedulerDescription());
+
         configManager = new ConfigManager(this);
         configManager.ensureDefaults();
+        startupStep(3, totalSteps, "配置文件检查完成：主配置、频道、格式、交互、过滤、审核、占位符和数据库配置已就绪");
+
         text = new TextService(this);
         messages = new MessageService(text);
         channels = new ChannelService();
@@ -76,8 +89,10 @@ public final class AnnaChat extends JavaPlugin {
         database = new DatabaseService(this);
         chatListener = new ChatListener(this, ingress);
         api = new AnnaChatApiImpl(this);
+        startupStep(4, totalSteps, "核心服务初始化完成：频道、格式、过滤、审核、状态、数据库和聊天管线已创建");
 
         state.load();
+        startupStep(5, totalSteps, "玩家状态与好友数据加载完成：在线玩家索引=" + onlinePlayers.count());
         try {
             apply(configManager.load(text));
         } catch (RuntimeException exception) {
@@ -85,6 +100,15 @@ public final class AnnaChat extends JavaPlugin {
             Bukkit.getPluginManager().disablePlugin(this);
             return;
         }
+        RuntimeConfig loaded = runtime();
+        startupStep(6, totalSteps, "运行配置加载完成：频道=" + channels.all().size()
+                + "，格式=" + formats.count()
+                + "，审核词条=" + moderation.wordCount()
+                + "，自定义占位符=" + loaded.customPlaceholders().size()
+                + "，MySQL=" + (loaded.database().getBoolean("enabled", false) ? "开启" : "关闭"));
+        startupStep(7, totalSteps, "聊天事件桥接完成：旧事件 + Paper AsyncChatEvent，首条消息回退="
+                + loaded.legacyEventFallbackTicks() + " tick，原生事件取消="
+                + (loaded.cancelNativeChatEvent() ? "开启" : "关闭"));
 
         AnnaChatCommand command = new AnnaChatCommand(this);
         Objects.requireNonNull(getCommand("annachat")).setExecutor(command);
@@ -93,6 +117,7 @@ public final class AnnaChat extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(new ConsoleCommandBridge(this), this);
         Bukkit.getPluginManager().registerEvents(onlinePlayers, this);
         Bukkit.getServicesManager().register(AnnaChatApi.class, api, this, ServicePriority.Normal);
+        startupStep(8, totalSteps, "命令、Bukkit 事件和 AnnaChat API 注册完成");
         if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
             placeholderExpansion = new AnnaChatExpansion(this);
             if (placeholderExpansion.register()) {
@@ -100,10 +125,16 @@ public final class AnnaChat extends JavaPlugin {
             } else {
                 getLogger().warning("PlaceholderAPI 扩展注册失败");
             }
+        } else {
+            getLogger().info("PlaceholderAPI 未安装，跳过可选占位符扩展");
         }
+        startupStep(9, totalSteps, "可选集成检查完成：PlaceholderAPI="
+                + (placeholderExpansion != null && placeholderExpansion.isRegistered() ? "已注册" : "未启用"));
 
-        getLogger().info("AnnaChat " + getPluginMeta().getVersion()
-                + " 已加载；运行平台: " + (isFolia() ? "Folia" : "Paper"));
+        startupStep(10, totalSteps, "AnnaChat " + getPluginMeta().getVersion()
+                + " 启动完成；模式=" + platformMode.displayName()
+                + "；Folia 线程安全调度=" + (platformMode.isFolia() ? "启用" : "不适用"));
+        getLogger().info("========== AnnaChat 启动流程完成 ==========");
     }
 
     @Override
@@ -196,17 +227,13 @@ public final class AnnaChat extends JavaPlugin {
         return cursor.getMessage() == null ? cursor.getClass().getSimpleName() : cursor.getMessage();
     }
 
-    private static boolean isFolia() {
-        try {
-            Class.forName("io.papermc.paper.threadedregions.RegionizedServer");
-            return true;
-        } catch (ClassNotFoundException ignored) {
-            return false;
-        }
+    private void startupStep(int step, int total, String message) {
+        getLogger().info("[启动 " + step + "/" + total + "] " + message);
     }
 
     public AnnaChatApi getApi() { return api; }
     public RuntimeConfig runtime() { return Objects.requireNonNull(runtime.get(), "配置尚未加载"); }
+    public PlatformMode platformMode() { return Objects.requireNonNull(platformMode, "平台模式尚未识别"); }
     public SchedulerService scheduler() { return scheduler; }
     public TextService text() { return text; }
     public MessageService messages() { return messages; }

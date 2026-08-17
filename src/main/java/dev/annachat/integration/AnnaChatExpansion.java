@@ -19,8 +19,9 @@ import java.util.concurrent.locks.Lock;
 /**
  * 向 PlaceholderAPI 注册 AnnaChat 自身状态变量。
  *
- * <p>PlaceholderAPI 会在调用方所在的线程执行扩展。AnnaChat 内部只会在玩家
- * 实体线程解析玩家变量；其他插件调用这些变量时，也应遵守 Folia 的实体线程规则。</p>
+ * <p>PlaceholderAPI 会在调用方所在的线程执行扩展。AnnaChat 内部只会在发送者
+ * 所属的平台调度上下文解析玩家变量；其他插件调用这些变量时，也应遵守当前
+ * 服务端平台的线程规则。</p>
  */
 public final class AnnaChatExpansion extends PlaceholderExpansion {
     private final AnnaChat plugin;

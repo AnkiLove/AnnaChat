@@ -22,7 +22,7 @@ AnnaChat 是面向 Paper 26.1+、Java 25 的模块化聊天管理插件。
 .\gradlew.bat clean build
 ```
 
-产物位于 `out/AnnaChat-1.1.2.jar`。
+产物位于 `out/AnnaChat-1.1.3.jar`。
 
 ## 命令
 
@@ -71,7 +71,9 @@ AnnaChat 是面向 Paper 26.1+、Java 25 的模块化聊天管理插件。
 
 ## Folia 线程约定
 
-- 异步聊天事件只捕获不可变文本；频道、权限、冷却和玩家状态统一回到发送者的 `EntityScheduler` 处理。
+- 插件启动时会自动识别 Paper 或 Folia，并在控制台输出完整的 10 阶段加载流程。
+- Paper 模式使用 Bukkit 主线程与异步调度器；Folia 模式使用玩家实体调度器、全局区域调度器和 Folia 异步调度器。
+- 异步聊天事件只捕获不可变文本；频道、权限、冷却和玩家状态统一回到当前平台的发送者调度器处理。
 - 正常聊天由 Paper 事件认领，旧事件只保留一条短期回退任务；同一输入不会被两套事件重复广播。
 - 玩家与发送者数据在其 `EntityScheduler` 上读取。
 - 每个接收者的权限、世界、距离、屏蔽状态与消息发送均在该接收者自己的 `EntityScheduler` 上执行。
