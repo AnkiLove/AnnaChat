@@ -1,5 +1,8 @@
+<p align="center">
+  <img src="docs/assets/annachat-banner.png" alt="AnnaChat Paper and Folia chat management" width="100%">
+</p>
+
 <div align="center">
-  <img src="docs/assets/annachat-logo.png" alt="AnnaChat" width="220">
   <h1>AnnaChat</h1>
   <p>面向 Paper 与 Folia 的模块化聊天管理插件</p>
   <p>
@@ -9,10 +12,6 @@
     <img src="https://img.shields.io/badge/Paper%20%7C%20Folia-26.x-00a9e0?style=flat-square" alt="Paper and Folia 26.x">
   </p>
 </div>
-
-<p align="center">
-  <img src="docs/assets/annachat-banner.png" alt="AnnaChat Paper and Folia chat management" width="100%">
-</p>
 
 ## 项目概览
 
@@ -168,7 +167,7 @@ API 类型位于 `dev.annachat.api` 包，插件同时提供 `AnnaChatProcessEve
 .\gradlew.bat clean build
 ```
 
-构建产物：`out/AnnaChat-1.1.4.jar`。
+构建产物：`out/AnnaChat-1.1.5.jar`。
 
 ## 目录结构
 
@@ -183,6 +182,6 @@ docs/assets                          README Logo 与横幅资源
 
 ## 发布
 
-当前稳定版本：[v1.1.4](https://github.com/AnkiLove/AnnaChat/releases/tag/v1.1.4)
+当前稳定版本：[v1.1.5](https://github.com/AnkiLove/AnnaChat/releases/tag/v1.1.5)
 
 仓库主题标签：`minecraft`、`minecraft-plugin`、`paper`、`folia`、`chat`、`java`、`gradle`、`placeholderapi`、`mysql`、`minimessage`。
