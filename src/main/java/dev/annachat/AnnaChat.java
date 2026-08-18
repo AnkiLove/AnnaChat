@@ -36,6 +36,7 @@ public final class AnnaChat extends JavaPlugin {
     private FilterService filters;
     private ContentModerationService moderation;
     private InteractionService interactions;
+    private ItemDisplayService itemDisplay;
     private FormatService formats;
     private StateService state;
     private HistoryService history;
@@ -74,7 +75,8 @@ public final class AnnaChat extends JavaPlugin {
         processors = new ProcessorService();
         filters = new FilterService();
         moderation = new ContentModerationService();
-        interactions = new InteractionService(text);
+        itemDisplay = new ItemDisplayService();
+        interactions = new InteractionService(text, itemDisplay);
         formats = new FormatService(text, interactions);
         state = new StateService(this, scheduler);
         history = new HistoryService();
@@ -202,6 +204,7 @@ public final class AnnaChat extends JavaPlugin {
             state.reconcileChannels(channels.ids(), candidate.defaultChannel());
             filters.apply(candidate.filters());
             moderation.apply(candidate.moderation());
+            itemDisplay.apply(candidate.itemDisplay());
             interactions.apply(candidate.interactions());
             history.limit(candidate.historySize());
             messages.apply(candidate);
@@ -242,6 +245,7 @@ public final class AnnaChat extends JavaPlugin {
     public FilterService filters() { return filters; }
     public ContentModerationService moderation() { return moderation; }
     public InteractionService interactions() { return interactions; }
+    public ItemDisplayService itemDisplay() { return itemDisplay; }
     public FormatService formats() { return formats; }
     public StateService state() { return state; }
     public HistoryService history() { return history; }

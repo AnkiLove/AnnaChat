@@ -23,7 +23,7 @@ AnnaChat 是一个以配置为中心的 Minecraft 聊天管理插件。它将频
 | --- | --- |
 | 频道 | 全局、附近、好友三种频道；支持默认频道、快捷前缀、频道屏蔽和权限控制 |
 | 格式 | MiniMessage 分段格式；每个片段可配置悬停、点击、插入文本和占位符 |
-| 交互 | 正则匹配链接、提及、命令建议等内容，并配置独立点击事件 |
+| 交互 | 正则匹配链接、提及、命令建议和物品展示，并配置独立点击事件 |
 | 审核 | 脏话与涉政词库、大小写/全角归一化、忽略字符、白名单和警告计数 |
 | 审计 | MySQL 可选记录聊天、玩家指令和审核原文，默认关闭 |
 | 兼容 | Paper/Folia 自动识别；同一 JAR 使用对应平台调度策略 |
@@ -111,6 +111,13 @@ AnnaChat 是一个以配置为中心的 Minecraft 聊天管理插件。它将频
 - `%annachat_version%`
 - `%annachat_custom_<键名>%`
 
+聊天正文还支持只读物品预览：
+
+- `%1` 到 `%9`：展示快捷栏第 1 到第 9 格的物品。
+- `%i`：展示储物栏中的全部物品，并可选包含装备栏和副手。
+
+鼠标悬停物品名称即可查看原版物品信息。物品展示不会附加点击动作、执行命令或物品取出功能；`config.yml` 的 `item-display.enabled`、`permission`、`include-armor` 和 `include-offhand` 可控制该功能。
+
 格式片段支持 `{player}`、`{world}`、`{channel_display}` 和 `{custom:键名}`。玩家在聊天正文中使用 PAPI 变量需要 `annachat.chat.placeholders` 权限。
 
 格式片段的点击动作支持：
@@ -167,7 +174,7 @@ API 类型位于 `dev.annachat.api` 包，插件同时提供 `AnnaChatProcessEve
 .\gradlew.bat clean build
 ```
 
-构建产物：`out/AnnaChat-1.1.5.jar`。
+构建产物：`out/AnnaChat-1.1.6.jar`。
 
 ## 目录结构
 
@@ -177,11 +184,11 @@ src/main/java/dev/annachat/config    配置模型与校验
 src/main/java/dev/annachat/service   频道、聊天、审核、数据库和调度服务
 src/main/java/dev/annachat/platform  Paper/Folia 平台识别
 src/main/resources                   默认 YAML、plugin.yml 和帮助文本
-docs/assets                          README Logo 与横幅资源
+docs/assets                          README 横幅资源
 ```
 
 ## 发布
 
-当前稳定版本：[v1.1.5](https://github.com/AnkiLove/AnnaChat/releases/tag/v1.1.5)
+当前稳定版本：[v1.1.6](https://github.com/AnkiLove/AnnaChat/releases/tag/v1.1.6)
 
 仓库主题标签：`minecraft`、`minecraft-plugin`、`paper`、`folia`、`chat`、`java`、`gradle`、`placeholderapi`、`mysql`、`minimessage`。

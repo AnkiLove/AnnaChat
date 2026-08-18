@@ -12,6 +12,7 @@ public record RuntimeConfig(
         List<ConfiguredInteraction> interactions,
         List<ConfiguredFilter> filters,
         ModerationSettings moderation,
+        ItemDisplaySettings itemDisplay,
         Map<String, String> quickSwitch,
         String defaultChannel,
         EventPriority eventPriority,

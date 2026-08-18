@@ -237,6 +237,12 @@ public final class ConfigManager {
                 loadInteractions(interactionsFile, textService),
                 loadFilters(filtersFile),
                 loadModeration(moderationFile),
+                new ItemDisplaySettings(
+                        mainFile.getBoolean("item-display.enabled", true),
+                        mainFile.getString("item-display.permission", ""),
+                        mainFile.getBoolean("item-display.include-armor", true),
+                        mainFile.getBoolean("item-display.include-offhand", true)
+                ),
                 Map.copyOf(switches),
                 defaultChannel,
                 priority,
@@ -280,7 +286,7 @@ public final class ConfigManager {
                 plugin.getResource("config.yml"), "JAR 内缺少 config.yml");
              InputStreamReader reader = new InputStreamReader(input, StandardCharsets.UTF_8)) {
             YamlConfiguration defaults = YamlConfiguration.loadConfiguration(reader);
-            Set<String> mergeRoots = Set.of("settings", "formatting", "storage", "messages");
+            Set<String> mergeRoots = Set.of("settings", "formatting", "storage", "messages", "item-display");
             for (String path : defaults.getKeys(true)) {
                 String root = path.contains(".") ? path.substring(0, path.indexOf('.')) : path;
                 if (!mergeRoots.contains(root) || defaults.isConfigurationSection(path) || target.contains(path)) {

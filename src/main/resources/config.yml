@@ -50,6 +50,16 @@ storage:
   # data.yml 自动保存间隔，最低 30 秒；文件 I/O 在异步线程执行。
   autosave-seconds: 120
 
+# 聊天物品展示：在聊天正文中输入 %1-%9 展示快捷栏对应格，输入 %i 展示整个背包。
+# 展示结果只添加鼠标悬停预览，不包含点击、执行命令或取出物品行为。
+item-display:
+  enabled: true
+  # 留空表示所有拥有聊天权限的玩家都可使用；填写权限节点后仅授予者可展示。
+  permission: ''
+  # %i 是否包含装备栏和副手；快捷栏/储物栏始终包含。
+  include-armor: true
+  include-offhand: true
+
 messages:
   # 此处支持 MiniMessage；发送给玩家时也支持 PlaceholderAPI。
   prefix: '<dark_gray>[<aqua>AnnaChat</aqua>]</dark_gray> '
