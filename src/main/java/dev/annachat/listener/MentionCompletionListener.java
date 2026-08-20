@@ -30,17 +30,19 @@ public final class MentionCompletionListener implements Listener {
         List<String> matches = mentions.complete(token, player.getUniqueId());
         if (matches.isEmpty()) return;
 
-        LinkedHashSet<String> combined = new LinkedHashSet<>(event.getCompletions());
-        combined.addAll(matches);
-        event.setCompletions(new ArrayList<>(combined));
+        // @ 补全必须完全接管列表，避免客户端优先选中服务端默认提供的裸玩家名。
+        event.setCompletions(new ArrayList<>(matches));
         event.setHandled(true);
     }
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onLegacyChatTabComplete(PlayerChatTabCompleteEvent event) {
-        event.getTabCompletions().addAll(mentions.complete(
-                event.getLastToken(), event.getPlayer().getUniqueId()
-        ));
+        String token = event.getLastToken();
+        List<String> matches = mentions.complete(token, event.getPlayer().getUniqueId());
+        if (!matches.isEmpty()) {
+            event.getTabCompletions().clear();
+            event.getTabCompletions().addAll(matches);
+        }
     }
 
     static String lastToken(String input) {

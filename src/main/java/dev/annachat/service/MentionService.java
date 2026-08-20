@@ -16,16 +16,11 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * 解析在线玩家提及、生成补全候选，并在接收者自己的实体线程播放提示音。
  */
 public final class MentionService implements InteractionProvider {
-    private static final Pattern MENTION_PATTERN = Pattern.compile(
-            "(?<![A-Za-z0-9_])@([A-Za-z0-9_]{1,16})(?![A-Za-z0-9_])"
-    );
     private static final String METADATA_KEY = "annachat:mentioned-players";
 
     private final OnlinePlayerService onlinePlayers;
@@ -47,15 +42,17 @@ public final class MentionService implements InteractionProvider {
         MentionSettings current = settings;
         if (!canMention(context.sender(), current)) return Optional.empty();
 
-        Matcher matcher = MENTION_PATTERN.matcher(message);
-        while (matcher.find(fromIndex)) {
-            OnlinePlayerService.PlayerIdentity identity = onlinePlayers.identity(matcher.group(1)).orElse(null);
-            if (identity == null) continue;
-            Component component = Component.text("@" + identity.name(), NamedTextColor.YELLOW)
+        MentionScanner.MentionRange range = MentionScanner.next(message, fromIndex);
+        while (range != null) {
+            OnlinePlayerService.PlayerIdentity identity = onlinePlayers.identity(range.name()).orElse(null);
+            if (identity != null) {
+                Component component = Component.text("@" + identity.name(), NamedTextColor.YELLOW)
                     .hoverEvent(Component.text("点击填入私聊命令", NamedTextColor.GRAY))
                     .clickEvent(ClickEvent.suggestCommand("/msg " + identity.name() + " "))
                     .insertion(identity.name());
-            return Optional.of(new InteractiveMatch(matcher.start(), matcher.end(), component));
+                return Optional.of(new InteractiveMatch(range.start(), range.end(), component));
+            }
+            range = MentionScanner.next(message, range.end());
         }
         return Optional.empty();
     }
@@ -75,13 +72,14 @@ public final class MentionService implements InteractionProvider {
             return;
         }
         Set<UUID> mentioned = new LinkedHashSet<>();
-        Matcher matcher = MENTION_PATTERN.matcher(context.message());
-        while (matcher.find()) {
-            onlinePlayers.identity(matcher.group(1)).ifPresent(identity -> {
+        MentionScanner.MentionRange range = MentionScanner.next(context.message(), 0);
+        while (range != null) {
+            onlinePlayers.identity(range.name()).ifPresent(identity -> {
                 if (!identity.uniqueId().equals(context.senderSnapshot().uniqueId())) {
                     mentioned.add(identity.uniqueId());
                 }
             });
+            range = MentionScanner.next(context.message(), range.end());
         }
         if (mentioned.isEmpty()) {
             context.metadata().remove(METADATA_KEY);
@@ -122,8 +120,8 @@ public final class MentionService implements InteractionProvider {
      */
     public boolean startsWithOnlineMention(Player sender, String input) {
         if (!canMention(sender, settings) || input == null || !input.startsWith("@")) return false;
-        Matcher matcher = MENTION_PATTERN.matcher(input);
-        return matcher.lookingAt() && onlinePlayers.identity(matcher.group(1)).isPresent();
+        MentionScanner.MentionRange range = MentionScanner.next(input, 0);
+        return range != null && range.start() == 0 && onlinePlayers.identity(range.name()).isPresent();
     }
 
     private boolean canMention(Player sender, MentionSettings current) {
@@ -135,4 +133,5 @@ public final class MentionService implements InteractionProvider {
         Object value = context.metadata().get(METADATA_KEY);
         return value instanceof Set<?> set && set.contains(candidateId);
     }
+
 }

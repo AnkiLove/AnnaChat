@@ -197,6 +197,6 @@ docs/assets                          README 横幅资源
 
 ## 发布
 
-当前稳定版本：[v1.1.7](https://github.com/AnkiLove/AnnaChat/releases/tag/v1.1.7)
+当前稳定版本：[v1.1.8](https://github.com/AnkiLove/AnnaChat/releases/tag/v1.1.8)
 
 仓库主题标签：`minecraft`、`minecraft-plugin`、`paper`、`folia`、`chat`、`java`、`gradle`、`placeholderapi`、`mysql`、`minimessage`。
