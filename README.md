@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/annachat-banner.png" alt="AnnaChat Paper and Folia chat management" width="100%">
+  <img src="docs/assets/annachat-banner.jpg" alt="AnnaChat Paper and Folia chat management" width="100%">
 </p>
 
 <div align="center">
@@ -23,7 +23,7 @@ AnnaChat 是一个以配置为中心的 Minecraft 聊天管理插件。它将频
 | --- | --- |
 | 频道 | 全局、附近、好友三种频道；支持默认频道、快捷前缀、频道屏蔽和权限控制 |
 | 格式 | MiniMessage 分段格式；每个片段可配置悬停、点击、插入文本和占位符 |
-| 交互 | 正则匹配链接、提及、命令建议和物品展示，并配置独立点击事件 |
+| 交互 | 链接、在线玩家提及、聊天补全、命令建议和物品展示，并配置独立点击事件 |
 | 审核 | 脏话与涉政词库、大小写/全角归一化、忽略字符、白名单和警告计数 |
 | 审计 | MySQL 可选记录聊天、玩家指令和审核原文，默认关闭 |
 | 兼容 | Paper/Folia 自动识别；同一 JAR 使用对应平台调度策略 |
@@ -55,7 +55,7 @@ AnnaChat 是一个以配置为中心的 Minecraft 聊天管理插件。它将频
 | 频道 | 用途 | 快捷前缀 |
 | --- | --- | --- |
 | `global` | 向全服在线玩家发送 | `!` |
-| `local` | 向附近且同世界的玩家发送 | `@` |
+| `local` | 向附近且同世界的玩家发送 | `~` |
 | `friends` | 向已建立双向好友关系的在线好友发送 | `#` |
 
 快捷前缀只影响当前消息，不会改变玩家的默认频道。默认频道和前缀均可在 `config.yml` 调整。
@@ -81,6 +81,14 @@ AnnaChat 是一个以配置为中心的 Minecraft 聊天管理插件。它将频
 | `/annachat spy` | 开关频道监听 |
 
 命令别名：`/ac`、`/achat`。普通玩家默认拥有聊天、频道切换、频道屏蔽和好友管理权限。
+
+## 聊天颜色与玩家提及
+
+- 拥有 `annachat.chat.color` 权限的玩家可在聊天中使用 `&a`、`&l`、`&#RRGGBB` 和 `&x&F&F&0&0&A&A` 等颜色或样式代码；该权限默认授予 OP。
+- `annachat.chat.minimessage` 控制玩家直接使用 MiniMessage 标签，同样默认授予 OP。
+- 输入 `@玩家名` 可提及在线玩家，按 Tab 能自动补全名字；`annachat.chat.mention` 默认授予所有玩家。
+- 被提及者只有在实际收到当前频道消息时才会播放铁砧提示音，发送者提及自己不会播放。
+- 提及开关、权限、自动补全、声音、音量和音调均可在 `config.yml` 的 `mentions` 区域热重载。
 
 ## 配置文件
 
@@ -189,6 +197,6 @@ docs/assets                          README 横幅资源
 
 ## 发布
 
-当前稳定版本：[v1.1.6](https://github.com/AnkiLove/AnnaChat/releases/tag/v1.1.6)
+当前稳定版本：[v1.1.7](https://github.com/AnkiLove/AnnaChat/releases/tag/v1.1.7)
 
 仓库主题标签：`minecraft`、`minecraft-plugin`、`paper`、`folia`、`chat`、`java`、`gradle`、`placeholderapi`、`mysql`、`minimessage`。

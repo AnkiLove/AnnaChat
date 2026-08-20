@@ -19,18 +19,6 @@ interactions:
       action: OPEN_URL
       value: '{match}'
 
-  mention:
-    enabled: true
-    priority: 200
-    pattern: '@([A-Za-z0-9_]{1,16})'
-    text: '<yellow>{match}</yellow>'
-    hover:
-      - '<gray>点击填入私聊命令</gray>'
-    click:
-      action: SUGGEST_COMMAND
-      value: '/msg {group:1} '
-    insertion: '{group:1}'
-
   command:
     enabled: true
     priority: 300

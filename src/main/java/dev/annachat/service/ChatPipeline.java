@@ -28,6 +28,7 @@ public final class ChatPipeline {
     private final ProcessorService processors;
     private final FilterService filters;
     private final ContentModerationService moderation;
+    private final MentionService mentions;
     private final FormatService formats;
     private final RecipientService recipients;
     private final HistoryService history;
@@ -36,7 +37,7 @@ public final class ChatPipeline {
 
     public ChatPipeline(AnnaChat plugin, SchedulerService scheduler, ChannelService channels,
                         StateService state, ProcessorService processors, FilterService filters,
-                        ContentModerationService moderation, FormatService formats,
+                        ContentModerationService moderation, MentionService mentions, FormatService formats,
                         RecipientService recipients, HistoryService history,
                         MessageService messages) {
         this.plugin = plugin;
@@ -46,6 +47,7 @@ public final class ChatPipeline {
         this.processors = processors;
         this.filters = filters;
         this.moderation = moderation;
+        this.mentions = mentions;
         this.formats = formats;
         this.recipients = recipients;
         this.history = history;
@@ -144,6 +146,8 @@ public final class ChatPipeline {
         Bukkit.getPluginManager().callEvent(processEvent);
         if (processEvent.isCancelled()) return;
 
+        mentions.capture(context);
+
         Component rendered;
         try {
             rendered = formats.render(context);
@@ -183,6 +187,8 @@ public final class ChatPipeline {
             String input = message;
             Map.Entry<String, String> matched = plugin.runtime().quickSwitch().entrySet().stream()
                     .filter(entry -> input.startsWith(entry.getKey()))
+                    .filter(entry -> !("@".equals(entry.getKey())
+                            && mentions.startsWithOnlineMention(sender, input)))
                     .max(Comparator.comparingInt(entry -> entry.getKey().length()))
                     .orElse(null);
             if (matched != null) {

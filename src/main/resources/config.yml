@@ -33,12 +33,13 @@ settings:
 # 输入前缀仅临时切换本条消息的频道，不改变玩家默认频道
 quick-switch:
   '!': global
-  '@': local
+  '~': local
   '#': friends
 
 # 玩家拥有对应权限时可使用旧式颜色与 MiniMessage
 formatting:
-  # 允许玩家在聊天正文中使用 &a、&#RRGGBB 等旧式颜色。
+  # 允许玩家在聊天正文中使用 &a、&l、&#RRGGBB、&x&F&F&0&0&A&A 等颜色与样式代码。
+  # 默认权限 annachat.chat.color 仅 OP 拥有；可用权限插件授予普通玩家。
   legacy-color-permission: annachat.chat.color
   # 允许玩家在聊天正文中使用 MiniMessage 标签。
   minimessage-permission: annachat.chat.minimessage
@@ -59,6 +60,20 @@ item-display:
   # %i 是否包含装备栏和副手；快捷栏/储物栏始终包含。
   include-armor: true
   include-offhand: true
+
+# 在线玩家提及：输入 @玩家名，支持 Tab 自动补全；只有实际收到消息的被提及玩家会听到提示音。
+mentions:
+  enabled: true
+  # 留空表示所有玩家可用。默认节点在 plugin.yml 中授予所有玩家，OP 同样拥有。
+  permission: annachat.chat.mention
+  autocomplete: true
+  sound:
+    enabled: true
+    # Minecraft 声音键；配置无效时热重载会失败并保留旧配置。
+    name: minecraft:block.anvil.use
+    category: PLAYERS
+    volume: 0.8
+    pitch: 1.2
 
 messages:
   # 此处支持 MiniMessage；发送给玩家时也支持 PlaceholderAPI。

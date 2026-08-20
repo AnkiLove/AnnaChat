@@ -19,6 +19,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class TextService {
+    private static final LegacyComponentSerializer PLAYER_LEGACY_COLORS = LegacyComponentSerializer.builder()
+            .character('&')
+            .hexCharacter('#')
+            .hexColors()
+            .useUnusualXRepeatedCharacterHexFormat()
+            .build();
     private static final Pattern CUSTOM_TOKEN = Pattern.compile("\\{custom:([a-zA-Z0-9_]+)}");
     private static final Map<Character, String> LEGACY_TAGS = Map.ofEntries(
             Map.entry('0', "black"), Map.entry('1', "dark_blue"),
@@ -170,10 +176,12 @@ public final class TextService {
             input = PlaceholderAPI.setPlaceholders(context.sender(), input);
         }
         Component body;
+        boolean legacyColors = context.sender().hasPermission(plugin.runtime().legacyColorPermission());
         if (context.sender().hasPermission(plugin.runtime().miniMessagePermission())) {
-            body = miniMessage.deserialize(miniMessageSafe(input));
-        } else if (context.sender().hasPermission(plugin.runtime().legacyColorPermission())) {
-            body = LegacyComponentSerializer.legacyAmpersand().deserialize(input.replace('§', '&'));
+            // OP 默认同时拥有两项权限，因此 MiniMessage 与 & 颜色代码必须能够共存。
+            body = miniMessage.deserialize(playerMiniMessageSafe(input, legacyColors));
+        } else if (legacyColors) {
+            body = legacyPlayerText(input);
         } else {
             body = Component.text(input);
         }
@@ -234,7 +242,7 @@ public final class TextService {
         return miniMessageSafe(input, false);
     }
 
-    private String miniMessageSafe(String input, boolean allowAmpersand) {
+    private static String miniMessageSafe(String input, boolean allowAmpersand) {
         if (input == null || input.isEmpty()
                 || (input.indexOf('§') < 0 && (!allowAmpersand || input.indexOf('&') < 0))) {
             return input == null ? "" : input;
@@ -289,5 +297,16 @@ public final class TextService {
 
     public String plain(Component component) {
         return PlainTextComponentSerializer.plainText().serialize(component);
+    }
+
+    /**
+     * 支持 &a、&l、&#RRGGBB、&x&R&R&G&G&B&B 以及对应的 § 形式。
+     */
+    static Component legacyPlayerText(String input) {
+        return PLAYER_LEGACY_COLORS.deserialize(input.replace('§', '&'));
+    }
+
+    static String playerMiniMessageSafe(String input, boolean legacyColors) {
+        return miniMessageSafe(input, legacyColors);
     }
 }

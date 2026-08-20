@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "dev.annachat"
-version = providers.gradleProperty("version").orElse("1.1.6").get()
+version = providers.gradleProperty("version").orElse("1.1.7").get()
 
 repositories {
     mavenCentral()
@@ -23,6 +23,10 @@ dependencies {
     compileOnly("me.clip:placeholderapi:2.12.2")
     testImplementation(platform("org.junit:junit-bom:5.13.4"))
     testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation(platform("net.kyori:adventure-bom:4.26.1"))
+    testImplementation("net.kyori:adventure-text-serializer-legacy")
+    testImplementation("net.kyori:adventure-text-serializer-plain")
+    testImplementation("net.kyori:adventure-text-minimessage")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     implementation("com.zaxxer:HikariCP:7.0.2")
     runtimeOnly("com.mysql:mysql-connector-j:9.7.0")

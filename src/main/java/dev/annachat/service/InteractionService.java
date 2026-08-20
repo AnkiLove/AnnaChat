@@ -14,13 +14,16 @@ import java.util.List;
 public final class InteractionService {
     private final TextService textService;
     private final ItemDisplayService itemDisplayService;
+    private final MentionService mentionService;
     private volatile List<ConfiguredInteraction> configured = List.of();
     private final List<InteractionProvider> external = new ArrayList<>();
     private volatile List<InteractionProvider> providers = List.of();
 
-    public InteractionService(TextService textService, ItemDisplayService itemDisplayService) {
+    public InteractionService(TextService textService, ItemDisplayService itemDisplayService,
+                              MentionService mentionService) {
         this.textService = textService;
         this.itemDisplayService = itemDisplayService;
+        this.mentionService = mentionService;
     }
 
     /**
@@ -74,6 +77,7 @@ public final class InteractionService {
     private void rebuild() {
         List<InteractionProvider> rebuilt = new ArrayList<>();
         rebuilt.add(itemDisplayService);
+        rebuilt.add(mentionService);
         rebuilt.addAll(configured);
         rebuilt.addAll(external);
         rebuilt.sort(Comparator.comparingInt(InteractionProvider::priority));

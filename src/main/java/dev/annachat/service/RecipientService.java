@@ -18,12 +18,15 @@ public final class RecipientService {
     private final AnnaChat plugin;
     private final SchedulerService scheduler;
     private final StateService state;
+    private final MentionService mentions;
     private final List<RecipientPredicate> predicates = new CopyOnWriteArrayList<>();
 
-    public RecipientService(AnnaChat plugin, SchedulerService scheduler, StateService state) {
+    public RecipientService(AnnaChat plugin, SchedulerService scheduler, StateService state,
+                            MentionService mentions) {
         this.plugin = plugin;
         this.scheduler = scheduler;
         this.state = state;
+        this.mentions = mentions;
     }
 
     public void register(RecipientPredicate predicate) {
@@ -64,6 +67,7 @@ public final class RecipientService {
                                         ).append(message);
                                     }
                                     candidate.sendMessage(output);
+                                    mentions.notifyIfMentioned(context, candidate);
                                     delivered.incrementAndGet();
                                 }
                             } finally {

@@ -13,6 +13,7 @@ public record RuntimeConfig(
         List<ConfiguredFilter> filters,
         ModerationSettings moderation,
         ItemDisplaySettings itemDisplay,
+        MentionSettings mentions,
         Map<String, String> quickSwitch,
         String defaultChannel,
         EventPriority eventPriority,

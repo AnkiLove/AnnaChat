@@ -10,6 +10,7 @@ import dev.annachat.integration.AnnaChatExpansion;
 import dev.annachat.listener.ChatListener;
 import dev.annachat.listener.CommandLogListener;
 import dev.annachat.listener.ConsoleCommandBridge;
+import dev.annachat.listener.MentionCompletionListener;
 import dev.annachat.platform.PlatformMode;
 import dev.annachat.service.*;
 import org.bukkit.Bukkit;
@@ -37,6 +38,7 @@ public final class AnnaChat extends JavaPlugin {
     private ContentModerationService moderation;
     private InteractionService interactions;
     private ItemDisplayService itemDisplay;
+    private MentionService mentions;
     private FormatService formats;
     private StateService state;
     private HistoryService history;
@@ -76,15 +78,16 @@ public final class AnnaChat extends JavaPlugin {
         filters = new FilterService();
         moderation = new ContentModerationService();
         itemDisplay = new ItemDisplayService();
-        interactions = new InteractionService(text, itemDisplay);
-        formats = new FormatService(text, interactions);
         state = new StateService(this, scheduler);
         history = new HistoryService();
         onlinePlayers = new OnlinePlayerService(state);
         onlinePlayers.initialize();
-        recipients = new RecipientService(this, scheduler, state);
+        mentions = new MentionService(onlinePlayers);
+        interactions = new InteractionService(text, itemDisplay, mentions);
+        formats = new FormatService(text, interactions);
+        recipients = new RecipientService(this, scheduler, state, mentions);
         pipeline = new ChatPipeline(
-                this, scheduler, channels, state, processors, filters, moderation,
+                this, scheduler, channels, state, processors, filters, moderation, mentions,
                 formats, recipients, history, messages
         );
         ingress = new ChatIngressService(this, scheduler);
@@ -106,6 +109,7 @@ public final class AnnaChat extends JavaPlugin {
         startupStep(6, totalSteps, "运行配置加载完成：频道=" + channels.all().size()
                 + "，格式=" + formats.count()
                 + "，审核词条=" + moderation.wordCount()
+                + "，玩家提及=" + (loaded.mentions().enabled() ? "开启" : "关闭")
                 + "，自定义占位符=" + loaded.customPlaceholders().size()
                 + "，MySQL=" + (loaded.database().getBoolean("enabled", false) ? "开启" : "关闭"));
         startupStep(7, totalSteps, "聊天事件桥接完成：旧事件 + Paper AsyncChatEvent，首条消息回退="
@@ -117,6 +121,7 @@ public final class AnnaChat extends JavaPlugin {
         Objects.requireNonNull(getCommand("annachat")).setTabCompleter(command);
         Bukkit.getPluginManager().registerEvents(new CommandLogListener(this), this);
         Bukkit.getPluginManager().registerEvents(new ConsoleCommandBridge(this), this);
+        Bukkit.getPluginManager().registerEvents(new MentionCompletionListener(mentions), this);
         Bukkit.getPluginManager().registerEvents(onlinePlayers, this);
         Bukkit.getServicesManager().register(AnnaChatApi.class, api, this, ServicePriority.Normal);
         startupStep(8, totalSteps, "命令、Bukkit 事件和 AnnaChat API 注册完成");
@@ -205,6 +210,7 @@ public final class AnnaChat extends JavaPlugin {
             filters.apply(candidate.filters());
             moderation.apply(candidate.moderation());
             itemDisplay.apply(candidate.itemDisplay());
+            mentions.apply(candidate.mentions());
             interactions.apply(candidate.interactions());
             history.limit(candidate.historySize());
             messages.apply(candidate);
@@ -246,6 +252,7 @@ public final class AnnaChat extends JavaPlugin {
     public ContentModerationService moderation() { return moderation; }
     public InteractionService interactions() { return interactions; }
     public ItemDisplayService itemDisplay() { return itemDisplay; }
+    public MentionService mentions() { return mentions; }
     public FormatService formats() { return formats; }
     public StateService state() { return state; }
     public HistoryService history() { return history; }

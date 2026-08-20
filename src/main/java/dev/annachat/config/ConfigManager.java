@@ -7,6 +7,10 @@ import dev.annachat.service.TextService;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.EventPriority;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Registry;
+import org.bukkit.Sound;
+import org.bukkit.SoundCategory;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,11 +43,37 @@ public final class ConfigManager {
             }
         }
         migrateLegacyChannelDefaults();
+        migrateLegacyMentionInteraction();
+    }
+
+    /**
+     * 删除旧版内置的通用 @ 正则，避免它让离线名字或无权限玩家绕过新的提及服务。
+     * 仅在整条规则仍等于旧默认值时迁移，管理员修改过的规则保持不变。
+     */
+    private void migrateLegacyMentionInteraction() {
+        File interactionFile = new File(plugin.getDataFolder(), "interactions.yml");
+        YamlConfiguration interactions = YamlConfiguration.loadConfiguration(interactionFile);
+        String root = "interactions.mention";
+        if (!interactions.isConfigurationSection(root)) return;
+        boolean legacyDefault = "@([A-Za-z0-9_]{1,16})".equals(interactions.getString(root + ".pattern"))
+                && "SUGGEST_COMMAND".equalsIgnoreCase(interactions.getString(root + ".click.action", ""))
+                && "/msg {group:1} ".equals(interactions.getString(root + ".click.value"));
+        if (!legacyDefault) return;
+
+        backupOnce(interactionFile, "interactions.yml.pre-1.1.7.bak");
+        interactions.set(root, null);
+        try {
+            interactions.save(interactionFile);
+            plugin.getLogger().info("已迁移旧版提及正则，现在由在线校验、权限与提示音服务统一处理；原配置已备份");
+        } catch (IOException exception) {
+            throw new IllegalStateException("保存提及交互迁移配置失败", exception);
+        }
     }
 
     /**
      * 迁移内置频道与格式：1.0.8 精简为全服、附近和好友，1.1.0 将旧默认格式
-     * 改为传统 & 颜色码。两类迁移均只处理已知旧值，避免覆盖自定义配置。
+     * 改为传统 & 颜色码，1.1.7 释放 @ 前缀供玩家提及使用。迁移只处理已知
+     * 旧默认值，避免覆盖自定义配置。
      */
     private void migrateLegacyChannelDefaults() {
         File channelFile = new File(plugin.getDataFolder(), "channels.yml");
@@ -57,7 +87,10 @@ public final class ConfigManager {
         boolean oldQuickSwitch = "staff".equalsIgnoreCase(main.getString("quick-switch.#", ""));
         boolean legacyChannelLayout = oldChannels || oldFormats || oldQuickSwitch;
         boolean oldFormatColors = formats.getInt("schema-version", 1) < 4;
-        if (!legacyChannelLayout && !oldFormatColors) return;
+        boolean oldMentionPrefix = "local".equalsIgnoreCase(main.getString("quick-switch.@", ""))
+                && !main.contains("quick-switch.~");
+        boolean missingMentions = !main.isConfigurationSection("mentions");
+        if (!legacyChannelLayout && !oldFormatColors && !oldMentionPrefix && !missingMentions) return;
 
         if (legacyChannelLayout) {
             backupOnce(channelFile, "channels.yml.pre-1.0.8.bak");
@@ -65,6 +98,7 @@ public final class ConfigManager {
             backupOnce(mainFile, "config.yml.pre-1.0.8.bak");
         }
         if (oldFormatColors) backupOnce(formatFile, "formats.yml.pre-1.1.0.bak");
+        if (oldMentionPrefix || missingMentions) backupOnce(mainFile, "config.yml.pre-1.1.7.bak");
 
         if (legacyChannelLayout) {
             YamlConfiguration bundledChannels = loadBundled("channels.yml");
@@ -89,14 +123,30 @@ public final class ConfigManager {
         if (oldFormatColors) {
             migrateDefaultFormatColors(formats);
         }
+        if (oldMentionPrefix) {
+            main.set("quick-switch.@", null);
+            main.set("quick-switch.~", "local");
+        }
+        if (missingMentions) {
+            copySection(loadBundled("config.yml"), main, "mentions");
+        }
         formats.set("schema-version", 4);
         try {
             channels.save(channelFile);
             formats.save(formatFile);
             main.save(mainFile);
-            plugin.getLogger().info(legacyChannelLayout
-                    ? "已将旧频道配置迁移为全服、附近和好友频道；原文件已备份"
-                    : "已将旧默认聊天格式迁移为 & 颜色码；原格式文件已备份");
+            if (legacyChannelLayout) {
+                plugin.getLogger().info("已将旧频道配置迁移为全服、附近和好友频道；原文件已备份");
+            }
+            if (oldFormatColors) {
+                plugin.getLogger().info("已将旧默认聊天格式迁移为 & 颜色码；原格式文件已备份");
+            }
+            if (oldMentionPrefix) {
+                plugin.getLogger().info("已将附近频道旧默认前缀 @ 迁移为 ~，现在 @ 用于玩家提及；原配置已备份");
+            }
+            if (missingMentions) {
+                plugin.getLogger().info("已写入玩家提及、自动补全与提示音配置；原配置已备份");
+            }
         } catch (IOException exception) {
             throw new IllegalStateException("保存频道或格式迁移配置失败", exception);
         }
@@ -243,6 +293,7 @@ public final class ConfigManager {
                         mainFile.getBoolean("item-display.include-armor", true),
                         mainFile.getBoolean("item-display.include-offhand", true)
                 ),
+                loadMentionSettings(mainFile),
                 Map.copyOf(switches),
                 defaultChannel,
                 priority,
@@ -286,7 +337,9 @@ public final class ConfigManager {
                 plugin.getResource("config.yml"), "JAR 内缺少 config.yml");
              InputStreamReader reader = new InputStreamReader(input, StandardCharsets.UTF_8)) {
             YamlConfiguration defaults = YamlConfiguration.loadConfiguration(reader);
-            Set<String> mergeRoots = Set.of("settings", "formatting", "storage", "messages", "item-display");
+            Set<String> mergeRoots = Set.of(
+                    "settings", "formatting", "storage", "messages", "item-display", "mentions"
+            );
             for (String path : defaults.getKeys(true)) {
                 String root = path.contains(".") ? path.substring(0, path.indexOf('.')) : path;
                 if (!mergeRoots.contains(root) || defaults.isConfigurationSection(path) || target.contains(path)) {
@@ -296,6 +349,34 @@ public final class ConfigManager {
             }
         } catch (IOException exception) {
             throw new IllegalStateException("读取 JAR 内默认 config.yml 失败", exception);
+        }
+    }
+
+    private static MentionSettings loadMentionSettings(YamlConfiguration file) {
+        String rawSound = file.getString("mentions.sound.name", "minecraft:block.anvil.use");
+        String rawCategory = file.getString("mentions.sound.category", "PLAYERS");
+        try {
+            String soundName = Objects.toString(rawSound, "minecraft:block.anvil.use")
+                    .strip().toLowerCase(Locale.ROOT);
+            if (!soundName.contains(":")) soundName = soundName.replace('_', '.');
+            NamespacedKey soundKey = NamespacedKey.fromString(soundName);
+            Sound sound = soundKey == null ? null : Registry.SOUND_EVENT.get(soundKey);
+            if (sound == null) throw new IllegalArgumentException("找不到声音 " + rawSound);
+            SoundCategory category = SoundCategory.valueOf(
+                    Objects.toString(rawCategory, "PLAYERS").toUpperCase(Locale.ROOT)
+            );
+            return new MentionSettings(
+                    file.getBoolean("mentions.enabled", true),
+                    file.getString("mentions.permission", "annachat.chat.mention"),
+                    file.getBoolean("mentions.autocomplete", true),
+                    file.getBoolean("mentions.sound.enabled", true),
+                    sound,
+                    category,
+                    (float) file.getDouble("mentions.sound.volume", 0.8D),
+                    (float) file.getDouble("mentions.sound.pitch", 1.2D)
+            );
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException("mentions 提及提示音配置无效: " + exception.getMessage(), exception);
         }
     }
 

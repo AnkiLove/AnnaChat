@@ -31,6 +31,8 @@ permissions:
     default: true
   annachat.chat.color:
     default: op
+  annachat.chat.mention:
+    default: true
   annachat.chat.minimessage:
     default: op
   annachat.chat.placeholders:
