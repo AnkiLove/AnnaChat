@@ -129,7 +129,7 @@ public final class RecipientService {
 
     private static final class MiniSafe {
         private static String escape(String value) {
-            return net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().escapeTags(value);
+            return net.momirealms.sparrow.message.MiniMessage.miniMessage().escapeTags(value);
         }
     }
 }

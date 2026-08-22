@@ -41,7 +41,7 @@ class LegacyChatColorTest {
 
         assertTrue(prepared.startsWith("<reset><green><bold>"));
         assertEquals("测试", PlainTextSupport.plain(
-                net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(prepared)
+                net.momirealms.sparrow.message.MiniMessage.miniMessage().deserialize(prepared)
         ));
     }
 

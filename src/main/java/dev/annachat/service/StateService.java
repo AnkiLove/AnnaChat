@@ -4,7 +4,7 @@ import dev.annachat.AnnaChat;
 import dev.annachat.model.MuteEntry;
 import dev.annachat.model.FriendResult;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.YamlConfiguration;
+import dev.annachat.config.SparrowYamlConfiguration;
 
 import java.io.File;
 import java.io.IOException;
@@ -40,7 +40,7 @@ public final class StateService {
 
     public void load() {
         if (!file.isFile()) return;
-        YamlConfiguration data = YamlConfiguration.loadConfiguration(file);
+        SparrowYamlConfiguration data = SparrowYamlConfiguration.loadConfiguration(file);
         ConfigurationSection players = data.getConfigurationSection("players");
         if (players == null) return;
         for (String rawUuid : players.getKeys(false)) {
@@ -256,7 +256,7 @@ public final class StateService {
 
     private synchronized void save(Snapshot snapshot) {
         if (snapshot.revision < savedRevision) return;
-        YamlConfiguration data = new YamlConfiguration();
+        SparrowYamlConfiguration data = new SparrowYamlConfiguration();
         Set<UUID> players = new HashSet<>();
         players.addAll(snapshot.channels.keySet());
         players.addAll(snapshot.hidden.keySet());

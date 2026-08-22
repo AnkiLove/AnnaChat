@@ -7,7 +7,7 @@ import dev.annachat.config.TitleSettings;
 import me.clip.placeholderapi.PlaceholderAPI;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
-import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.momirealms.sparrow.message.MiniMessage;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
@@ -223,7 +223,7 @@ public final class TextService {
         }
         if (style == null || style.isBlank()) return body;
         return miniMessage.deserialize(miniMessageSafe(style) + "<message>",
-                net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.component("message", body));
+                net.momirealms.sparrow.message.tag.resolver.Placeholder.component("message", body));
     }
 
     public Component configuredComponent(ChatContext context, String text, List<String> hover,

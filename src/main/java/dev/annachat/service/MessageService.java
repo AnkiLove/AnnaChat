@@ -3,7 +3,7 @@ package dev.annachat.service;
 import dev.annachat.config.RuntimeConfig;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.momirealms.sparrow.message.MiniMessage;
 import org.bukkit.entity.Player;
 
 import java.util.Map;

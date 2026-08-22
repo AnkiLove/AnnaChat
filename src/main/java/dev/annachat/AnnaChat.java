@@ -114,7 +114,8 @@ public final class AnnaChat extends JavaPlugin {
                 + "，审核词条=" + moderation.wordCount()
                 + "，玩家提及=" + (loaded.mentions().enabled() ? "开启" : "关闭")
                 + "，自定义占位符=" + loaded.customPlaceholders().size()
-                + "，MySQL=" + (loaded.database().getBoolean("enabled", false) ? "开启" : "关闭"));
+                + "，数据库=" + (loaded.database().getBoolean("enabled", false)
+                ? loaded.database().getString("backend", "duckdb") + "开启" : "关闭"));
         startupStep(7, totalSteps, "聊天事件桥接完成：旧事件 + Paper AsyncChatEvent，首条消息回退="
                 + loaded.legacyEventFallbackTicks() + " tick，原生事件取消="
                 + (loaded.cancelNativeChatEvent() ? "开启" : "关闭"));

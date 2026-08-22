@@ -16,6 +16,10 @@ repositories {
         name = "placeholderapi"
         url = uri("https://repo.extendedclip.com/releases/")
     }
+    maven {
+        name = "momirealms"
+        url = uri("https://repo.momirealms.net/releases/")
+    }
 }
 
 dependencies {
@@ -23,12 +27,14 @@ dependencies {
     compileOnly("me.clip:placeholderapi:2.12.2")
     testImplementation(platform("org.junit:junit-bom:5.13.4"))
     testImplementation("org.junit.jupiter:junit-jupiter")
-    testImplementation(platform("net.kyori:adventure-bom:4.26.1"))
+    testImplementation(platform("net.kyori:adventure-bom:5.2.0"))
     testImplementation("net.kyori:adventure-text-serializer-legacy")
     testImplementation("net.kyori:adventure-text-serializer-plain")
-    testImplementation("net.kyori:adventure-text-minimessage")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     implementation("com.zaxxer:HikariCP:7.0.2")
+    implementation("net.momirealms:sparrow-minimessage:0.5")
+    implementation("net.momirealms:sparrow-yaml:1.0.12")
+    implementation("org.duckdb:duckdb_jdbc:1.3.1.0")
     runtimeOnly("com.mysql:mysql-connector-j:9.7.0")
 }
 
@@ -60,6 +66,7 @@ tasks {
         destinationDirectory.set(layout.projectDirectory.dir("out"))
         relocate("com.zaxxer.hikari", "dev.annachat.libs.hikari")
         relocate("com.mysql", "dev.annachat.libs.mysql")
+        relocate("net.momirealms.sparrow", "dev.annachat.libs.sparrow")
         mergeServiceFiles()
     }
     build {

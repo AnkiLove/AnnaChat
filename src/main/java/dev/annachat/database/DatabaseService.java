@@ -6,7 +6,7 @@ import dev.annachat.AnnaChat;
 import dev.annachat.api.ModerationMatch;
 import dev.annachat.api.context.ChatContext;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.YamlConfiguration;
+import dev.annachat.config.SparrowYamlConfiguration;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -33,23 +33,21 @@ public final class DatabaseService {
         this.plugin = plugin;
     }
 
-    public synchronized void apply(YamlConfiguration file) {
+    public synchronized void apply(SparrowYamlConfiguration file) {
         if (!file.getBoolean("enabled", false)) {
             Handle previous = current;
             current = null;
             if (previous != null) closeAsync(previous);
-            plugin.getLogger().info("MySQL 记录功能已关闭");
+            plugin.getLogger().info("数据库记录功能已关闭");
             return;
         }
 
         DatabaseSettings settings = parse(file);
         HikariConfig hikari = new HikariConfig();
-        String url = "jdbc:mysql://" + settings.host + ":" + settings.port + "/" + settings.database
-                + (settings.parameters.isBlank() ? "" : "?" + settings.parameters);
-        hikari.setJdbcUrl(url);
+        hikari.setJdbcUrl(settings.jdbcUrl);
         hikari.setUsername(settings.username);
         hikari.setPassword(settings.password);
-        hikari.setPoolName("AnnaChat-MySQL-" + generation.incrementAndGet());
+        hikari.setPoolName("AnnaChat-" + settings.backend + "-" + generation.incrementAndGet());
         hikari.setMinimumIdle(settings.minimumIdle);
         hikari.setMaximumPoolSize(settings.maximumPoolSize);
         hikari.setConnectionTimeout(settings.connectionTimeout);
@@ -64,7 +62,7 @@ public final class DatabaseService {
         current = next;
         ready.whenComplete((ignored, error) -> {
             if (error == null) {
-                plugin.getLogger().info("MySQL 记录功能已就绪");
+                plugin.getLogger().info(settings.backend + " 记录功能已就绪");
             } else {
                 plugin.getLogger().severe("MySQL 初始化失败: " + rootMessage(error));
             }
@@ -74,7 +72,7 @@ public final class DatabaseService {
         }
     }
 
-    public void validate(YamlConfiguration file) {
+    public void validate(SparrowYamlConfiguration file) {
         if (file.getBoolean("enabled", false)) {
             parse(file);
         }
@@ -166,6 +164,10 @@ public final class DatabaseService {
     }
 
     private void createTables(HikariDataSource pool, DatabaseSettings settings) {
+        if (settings.backend.equals("duckdb")) {
+            createDuckDbTables(pool, settings);
+            return;
+        }
         String chatTable = table(settings, "chat_logs");
         String commandTable = table(settings, "command_logs");
         String moderationTable = table(settings, "moderation_logs");
@@ -218,6 +220,43 @@ public final class DatabaseService {
                       INDEX idx_category_time (category_id, created_at)
                     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
                     """.formatted(moderationTable));
+        } catch (SQLException exception) {
+            throw new CompletionException(exception);
+        }
+    }
+
+    private void createDuckDbTables(HikariDataSource pool, DatabaseSettings settings) {
+        String chatTable = table(settings, "chat_logs");
+        String commandTable = table(settings, "command_logs");
+        String moderationTable = table(settings, "moderation_logs");
+        try (Connection connection = pool.getConnection(); Statement statement = connection.createStatement()) {
+            statement.executeUpdate("CREATE SEQUENCE IF NOT EXISTS " + table(settings, "chat_logs_seq"));
+            statement.executeUpdate("CREATE SEQUENCE IF NOT EXISTS " + table(settings, "command_logs_seq"));
+            statement.executeUpdate("CREATE SEQUENCE IF NOT EXISTS " + table(settings, "moderation_logs_seq"));
+            statement.executeUpdate(("""
+                    CREATE TABLE IF NOT EXISTS %s (
+                      id BIGINT PRIMARY KEY DEFAULT nextval('%s'),
+                      server_id VARCHAR NOT NULL, player_uuid VARCHAR NOT NULL, player_name VARCHAR NOT NULL,
+                      channel_id VARCHAR NOT NULL, world_key VARCHAR NOT NULL, original_message VARCHAR NOT NULL,
+                      final_message VARCHAR NOT NULL, created_at TIMESTAMP NOT NULL
+                    )
+                    """).formatted(chatTable, settings.tablePrefix + "chat_logs_seq"));
+            statement.executeUpdate(("""
+                    CREATE TABLE IF NOT EXISTS %s (
+                      id BIGINT PRIMARY KEY DEFAULT nextval('%s'),
+                      server_id VARCHAR NOT NULL, player_uuid VARCHAR NOT NULL, player_name VARCHAR NOT NULL,
+                      world_key VARCHAR NOT NULL, command_text VARCHAR NOT NULL, created_at TIMESTAMP NOT NULL
+                    )
+                    """).formatted(commandTable, settings.tablePrefix + "command_logs_seq"));
+            statement.executeUpdate(("""
+                    CREATE TABLE IF NOT EXISTS %s (
+                      id BIGINT PRIMARY KEY DEFAULT nextval('%s'),
+                      server_id VARCHAR NOT NULL, player_uuid VARCHAR NOT NULL, player_name VARCHAR NOT NULL,
+                      channel_id VARCHAR NOT NULL, world_key VARCHAR NOT NULL, category_id VARCHAR NOT NULL,
+                      matched_word VARCHAR NOT NULL, reason VARCHAR NOT NULL, warning_count INTEGER NOT NULL,
+                      original_message VARCHAR NOT NULL, created_at TIMESTAMP NOT NULL
+                    )
+                    """).formatted(moderationTable, settings.tablePrefix + "moderation_logs_seq"));
         } catch (SQLException exception) {
             throw new CompletionException(exception);
         }
@@ -283,26 +322,43 @@ public final class DatabaseService {
         }
     }
 
-    private static DatabaseSettings parse(YamlConfiguration file) {
+    private static DatabaseSettings parse(SparrowYamlConfiguration file) {
         String prefix = file.getString("table-prefix", "annachat_");
         if (!SAFE_PREFIX.matcher(prefix).matches()) {
             throw new IllegalArgumentException("database.yml 的 table-prefix 只能包含字母、数字和下划线");
         }
-        ConfigurationSection mysql = required(file, "mysql");
+        String backend = file.getString("backend", "duckdb").toLowerCase(Locale.ROOT);
+        if (!backend.equals("duckdb") && !backend.equals("mysql")) {
+            throw new IllegalArgumentException("database.yml 的 backend 只能是 duckdb 或 mysql");
+        }
+        ConfigurationSection database = required(file, backend);
         ConfigurationSection pool = required(file, "pool");
         Set<String> exclusions = new HashSet<>();
         for (String command : file.getStringList("logging.command-exclusions")) {
             exclusions.add(command.toLowerCase(Locale.ROOT).replaceFirst("^/", ""));
         }
+        String jdbcUrl;
+        String username;
+        String password;
+        if (backend.equals("duckdb")) {
+            String path = database.getString("path", "audit.duckdb");
+            java.io.File dbFile = new java.io.File(path);
+            if (!dbFile.isAbsolute()) dbFile = new java.io.File("plugins/AnnaChat", path);
+            jdbcUrl = "jdbc:duckdb:" + dbFile.toPath().toAbsolutePath().normalize();
+            username = "";
+            password = "";
+        } else {
+            jdbcUrl = "jdbc:mysql://" + database.getString("host", "127.0.0.1") + ":"
+                    + database.getInt("port", 3306) + "/" + database.getString("database", "minecraft")
+                    + (database.getString("parameters", "").isBlank() ? "" : "?" + database.getString("parameters"));
+            username = database.getString("username", "root");
+            password = database.getString("password", "");
+        }
         return new DatabaseSettings(
+                backend, jdbcUrl,
                 file.getString("server-id", "default"),
                 prefix,
-                mysql.getString("host", "127.0.0.1"),
-                mysql.getInt("port", 3306),
-                mysql.getString("database", "minecraft"),
-                mysql.getString("username", "root"),
-                mysql.getString("password", ""),
-                mysql.getString("parameters", ""),
+                username, password,
                 Math.max(0, pool.getInt("minimum-idle", 1)),
                 Math.max(1, pool.getInt("maximum-pool-size", 6)),
                 Math.max(250, pool.getLong("connection-timeout-millis", 5000)),
@@ -323,10 +379,12 @@ public final class DatabaseService {
     }
 
     private static String table(DatabaseSettings settings, String suffix) {
-        return "`" + settings.tablePrefix + suffix + "`";
+        return settings.backend.equals("duckdb")
+                ? "\"" + settings.tablePrefix + suffix + "\""
+                : "`" + settings.tablePrefix + suffix + "`";
     }
 
-    private static ConfigurationSection required(YamlConfiguration file, String path) {
+    private static ConfigurationSection required(SparrowYamlConfiguration file, String path) {
         ConfigurationSection section = file.getConfigurationSection(path);
         if (section == null) throw new IllegalArgumentException("database.yml 缺少 " + path);
         return section;
@@ -391,8 +449,8 @@ public final class DatabaseService {
                                     String world, String categoryId, String matchedWord, String reason,
                                     int warningCount, String originalMessage, Instant createdAt) {}
     private record DatabaseSettings(
-            String serverId, String tablePrefix, String host, int port, String database,
-            String username, String password, String parameters,
+            String backend, String jdbcUrl, String serverId, String tablePrefix,
+            String username, String password,
             int minimumIdle, int maximumPoolSize, long connectionTimeout, long idleTimeout, long maxLifetime,
             boolean logChat, boolean logCommands, boolean logModeration, Set<String> commandExclusions
     ) {}

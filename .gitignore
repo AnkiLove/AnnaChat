@@ -23,6 +23,7 @@ hs_err_pid*
 .Trash-*
 .nfs*
 .DS_Store
+.vscode
 .AppleDouble
 .LSOverride
 Icon

@@ -10,7 +10,7 @@ import dev.annachat.model.MuteEntry;
 import dev.annachat.util.DurationParser;
 import dev.annachat.service.OnlinePlayerService;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.momirealms.sparrow.message.MiniMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;

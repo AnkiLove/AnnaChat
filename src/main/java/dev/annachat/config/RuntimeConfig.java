@@ -1,6 +1,5 @@
 package dev.annachat.config;
 
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.EventPriority;
 
 import java.util.List;
@@ -38,7 +37,7 @@ public record RuntimeConfig(
         boolean stripUnresolvedPlaceholders,
         Map<String, String> customPlaceholders,
         Map<String, String> messages,
-        YamlConfiguration help,
-        YamlConfiguration database
+        SparrowYamlConfiguration help,
+        SparrowYamlConfiguration database
 ) {
 }
