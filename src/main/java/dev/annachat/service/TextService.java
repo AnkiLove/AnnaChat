@@ -28,6 +28,7 @@ public final class TextService {
             .build();
     private static final Pattern CUSTOM_TOKEN = Pattern.compile("\\{custom:([a-zA-Z0-9_]+)}");
     private static final Pattern UNRESOLVED_PLACEHOLDER = Pattern.compile("%[a-zA-Z0-9_:-]+%");
+    private static final Pattern ADVANCED_TAG = Pattern.compile("</?(gradient|rainbow|transition)(?::[^<>]{1,96})?>", Pattern.CASE_INSENSITIVE);
     private static final Map<Character, String> LEGACY_TAGS = Map.ofEntries(
             Map.entry('0', "black"), Map.entry('1', "dark_blue"),
             Map.entry('2', "dark_green"), Map.entry('3', "dark_aqua"),
@@ -213,9 +214,19 @@ public final class TextService {
         boolean legacyColors = globalColorPermission != null && !globalColorPermission.isBlank()
                 && context.sender().hasPermission(globalColorPermission);
         boolean anyLegacyPermission = legacyColors || hasAnyLegacyPermission(context.sender());
-        if (context.sender().hasPermission(plugin.runtime().miniMessagePermission())) {
+        boolean miniMessageAllowed = hasPermission(context.sender(), plugin.runtime().miniMessagePermission());
+        boolean gradientAllowed = hasPermission(context.sender(), plugin.runtime().gradientPermission());
+        boolean rainbowAllowed = hasPermission(context.sender(), plugin.runtime().rainbowPermission());
+        boolean transitionAllowed = hasPermission(context.sender(), plugin.runtime().transitionPermission());
+        if (miniMessageAllowed || gradientAllowed || rainbowAllowed || transitionAllowed) {
             // OP 默认同时拥有两项权限，因此 MiniMessage 与 & 颜色代码必须能够共存。
-            body = miniMessage.deserialize(playerMiniMessageSafe(input, context.sender(), legacyColors));
+            if (!miniMessageAllowed) {
+                // 先限制原始 MiniMessage 标签，再转换玩家获准使用的 &/§ 颜色码，
+                // 这样 Hex 和传统格式权限不会被标签安全处理误伤。
+                input = restrictAdvancedTags(input, gradientAllowed, rainbowAllowed, transitionAllowed);
+            }
+            String safeInput = playerMiniMessageSafe(input, context.sender(), legacyColors);
+            body = miniMessage.deserialize(safeInput);
         } else if (anyLegacyPermission) {
             body = legacyPlayerText(stripUnauthorizedLegacyCodes(input, context.sender(), legacyColors));
         } else {
@@ -281,6 +292,37 @@ public final class TextService {
     private boolean hasAnyLegacyPermission(Player player) {
         return plugin.runtime().legacyColorPermissions().values().stream().anyMatch(player::hasPermission)
                 || player.hasPermission(plugin.runtime().hexColorPermission());
+    }
+
+    private static boolean hasPermission(Player player, String permission) {
+        return permission != null && !permission.isBlank() && player.hasPermission(permission);
+    }
+
+    /** 仅保留单独授权的渐变类标签，其他 MiniMessage 标签统一转义为普通文本。 */
+    static String restrictAdvancedTags(String input, boolean gradient, boolean rainbow, boolean transition) {
+        Matcher matcher = ADVANCED_TAG.matcher(input);
+        Map<String, String> allowed = new LinkedHashMap<>();
+        StringBuffer buffer = new StringBuffer();
+        int index = 0;
+        while (matcher.find()) {
+            String tag = matcher.group();
+            String kind = matcher.group(1).toLowerCase(Locale.ROOT);
+            boolean permitted = (kind.equals("gradient") && gradient)
+                    || (kind.equals("rainbow") && rainbow)
+                    || (kind.equals("transition") && transition);
+            if (permitted) {
+                // 先替换为不会被 MiniMessage 识别的占位符，整体转义后再恢复标签。
+                String token = "__ANNACHAT_ADVANCED_TAG_" + (index++) + "__";
+                allowed.put(token, tag);
+                matcher.appendReplacement(buffer, Matcher.quoteReplacement(token));
+            } else {
+                matcher.appendReplacement(buffer, Matcher.quoteReplacement(tag));
+            }
+        }
+        matcher.appendTail(buffer);
+        String escaped = MiniMessage.miniMessage().escapeTags(buffer.toString());
+        for (Map.Entry<String, String> entry : allowed.entrySet()) escaped = escaped.replace(entry.getKey(), entry.getValue());
+        return escaped;
     }
 
     private boolean allowsLegacy(Player player, boolean global, char code, boolean hex) {

@@ -22,7 +22,7 @@ AnnaChat 是一个以配置为中心的 Minecraft 聊天管理插件。它将频
 | 模块 | 能力 |
 | --- | --- |
 | 频道 | 全局、附近、好友三种频道；支持默认频道、快捷前缀、频道屏蔽和权限控制 |
-| 格式 | MiniMessage 分段格式；每个片段可配置悬停、点击、插入文本和占位符 |
+| 格式 | MiniMessage 分段格式；支持 Hex、渐变、彩虹、过渡色，片段可配置悬停、点击、插入文本和占位符 |
 | 交互 | 链接、在线玩家提及、聊天补全、命令建议和物品展示，并配置独立点击事件 |
 | 审核 | 脏话与涉政词库、大小写/全角归一化、忽略字符、白名单和警告计数 |
 | 审计 | MySQL 可选记录聊天、玩家指令和审核原文，默认关闭 |
@@ -88,7 +88,8 @@ AnnaChat 是一个以配置为中心的 Minecraft 聊天管理插件。它将频
 - `annachat.chat.color` 仍可作为旧版总权限使用；推荐使用与输入符号一致的细分节点：`annachat.chat.color.&0` 至 `annachat.chat.color.&f`、`annachat.chat.color.hex`、`annachat.chat.format.&k` 至 `annachat.chat.format.&o` 和 `annachat.chat.format.&r`，均默认授予 OP，可单独授权普通玩家。旧的英文后缀节点仍保留兼容。
 - 聊天正文支持 `&0`-`&f`、`&k`-`&o`、`&r`、`&#RRGGBB` 和 `&x&F&F&0&0&A&A`。没有对应权限的代码会被移除，文本内容保留。
 - `groups.yml` 可按权限节点或 LuckPerms 主组覆盖聊天冷却、消息长度、最大提及数、审核绕过和过滤绕过策略；规则按优先级匹配，数值为 `-1` 时继承频道或主配置。
-- `annachat.chat.minimessage` 控制玩家直接使用 MiniMessage 标签，同样默认授予 OP。
+- `annachat.chat.minimessage` 控制玩家直接使用全部 MiniMessage 标签，同样默认授予 OP。`annachat.chat.gradient`、`annachat.chat.rainbow` 和 `annachat.chat.transition` 可在不开放全部标签的情况下，分别授权渐变、彩虹和过渡色。
+- 玩家正文支持 `<gradient:red:gold>文本</gradient>`、`<rainbow>文本</rainbow>`、`<transition:red:blue>文本</transition>` 以及 `<#RRGGBB>文本` 等现代颜色写法。没有对应权限的标签会按普通文本显示，不会影响整条消息。
 - 输入 `@玩家名` 可提及在线玩家，按 Tab 能自动补全名字；`annachat.chat.mention` 默认授予所有玩家。
 - 被提及者只有在实际收到当前频道消息时才会播放铁砧提示音，发送者提及自己不会播放。
 - 提及开关、权限、自动补全、声音、音量和音调均可在 `config.yml` 的 `mentions` 区域热重载。
@@ -150,6 +151,8 @@ format-rules:
 
 格式片段支持 `{player}`、`{display_name}`、`{title}`、`{group}`、`{world}`、`{channel_display}` 和 `{custom:键名}`。玩家在聊天正文中使用 PAPI 变量需要 `annachat.chat.placeholders` 权限。
 
+频道的 `receive-permission` 支持多个接收点权限，使用逗号或 `||` 分隔，任意一个权限满足即可。例如 `annachat.channel.staff || annachat.channel.helper` 可让管理组和协管组同时接收同一频道；发送者始终会收到自己的消息，候选玩家只在自己的实体线程完成权限和范围判断。
+
 格式片段的点击动作支持：
 
 - `RUN_COMMAND`
@@ -204,7 +207,7 @@ API 类型位于 `dev.annachat.api` 包，插件同时提供 `AnnaChatProcessEve
 .\gradlew.bat clean build
 ```
 
-构建产物：`out/AnnaChat-1.1.6.jar`。
+构建产物：`out/AnnaChat-1.2.1.jar`。
 
 ## 目录结构
 
@@ -219,6 +222,6 @@ docs/assets                          README 横幅资源
 
 ## 发布
 
-当前稳定版本：[v1.1.11](https://github.com/AnkiLove/AnnaChat/releases/tag/v1.1.11)
+当前稳定版本：[v1.2.1](https://github.com/AnkiLove/AnnaChat/releases/tag/v1.2.1)
 
 仓库主题标签：`minecraft`、`minecraft-plugin`、`paper`、`folia`、`chat`、`java`、`gradle`、`placeholderapi`、`mysql`、`minimessage`。

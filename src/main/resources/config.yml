@@ -67,7 +67,11 @@ formatting:
     italic: 'annachat.chat.format.&o'
     reset: 'annachat.chat.format.&r'
   # 允许玩家在聊天正文中使用 MiniMessage 标签。
+  # 渐变、彩虹和过渡色可独立授权；未授权的 MiniMessage 标签会按普通文本显示。
   minimessage-permission: annachat.chat.minimessage
+  gradient-permission: annachat.chat.gradient
+  rainbow-permission: annachat.chat.rainbow
+  transition-permission: annachat.chat.transition
   # 玩家直接在聊天正文中输入 PAPI 变量所需权限，例如 %player_health%
   player-message-placeholders-permission: annachat.chat.placeholders
   # PlaceholderAPI 返回未解析的 %name% 时是否自动移除。

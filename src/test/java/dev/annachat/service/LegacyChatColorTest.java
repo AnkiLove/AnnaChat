@@ -45,6 +45,19 @@ class LegacyChatColorTest {
         ));
     }
 
+    @Test
+    void keepsOnlyIndividuallyAuthorizedAdvancedTags() {
+        String prepared = TextService.restrictAdvancedTags(
+                "<gradient:red:blue>渐变</gradient> <rainbow>彩虹</rainbow> <bold>普通标签</bold>",
+                true, false, false);
+        Component component = net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(prepared);
+
+        assertEquals("渐变 <rainbow>彩虹</rainbow> <bold>普通标签</bold>", PlainTextSupport.plain(component));
+        assertTrue(prepared.contains("<gradient:red:blue>"));
+        assertTrue(prepared.contains("\\<rainbow>"));
+        assertTrue(prepared.contains("\\<bold>"));
+    }
+
     private static final class PlainTextSupport {
         private static final net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer SERIALIZER =
                 net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText();

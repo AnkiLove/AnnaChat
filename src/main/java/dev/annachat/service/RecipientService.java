@@ -112,7 +112,12 @@ public final class RecipientService {
                     context.senderSnapshot().uniqueId(), candidate.getUniqueId());
             case PERMISSION -> {
                 String permission = context.channel().receivePermission();
-                yield permission == null || permission.isBlank() || candidate.hasPermission(permission);
+                if (permission == null || permission.isBlank()) yield true;
+                // 支持多个接收权限：使用逗号或 || 分隔，任意一个权限匹配即可。
+                yield java.util.Arrays.stream(permission.split("(?:,|\\|\\|)"))
+                        .map(String::trim)
+                        .filter(value -> !value.isBlank())
+                        .anyMatch(candidate::hasPermission);
             }
         };
     }

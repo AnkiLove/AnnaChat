@@ -3,6 +3,7 @@
 # GLOBAL  全部在线玩家
 # LOCAL   同世界指定半径内玩家
 # FRIENDS 发送者本人及其双向好友
+# PERMISSION 按 receive-permission 接收；该字段可用逗号或 || 配置多个权限，任一权限满足即可。
 schema-version: 2
 channels:
   global:

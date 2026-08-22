@@ -100,6 +100,12 @@ permissions:
     default: op
   annachat.chat.color.hex:
     default: op
+  annachat.chat.gradient:
+    default: op
+  annachat.chat.rainbow:
+    default: op
+  annachat.chat.transition:
+    default: op
   annachat.chat.format.*:
     default: op
   "annachat.chat.format.&k":
