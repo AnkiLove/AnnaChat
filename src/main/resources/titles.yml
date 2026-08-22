@@ -1,0 +1,16 @@
+# 玩家称号配置。修改后执行 /annachat reload 即可热重载。
+# value 支持 & 颜色码、MiniMessage（管理员配置）和 PlaceholderAPI。
+# 默认值中的 &f[] 是完整称号内容，包含括号；设为空字符串即可完全隐藏称号。
+schema-version: 1
+titles:
+  default:
+    enabled: true
+    value: '&f[]'
+  # 规则按 priority 从小到大匹配，命中第一条。
+  # permission 与 group 至少填写一项；group 为 LuckPerms 主组名。
+  rules:
+    # admin:
+    #   priority: 10
+    #   permission: annachat.title.admin
+    #   group: admin
+    #   value: '&c[管理员]'

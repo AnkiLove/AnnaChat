@@ -69,7 +69,7 @@ public final class AnnaChat extends JavaPlugin {
 
         configManager = new ConfigManager(this);
         configManager.ensureDefaults();
-        startupStep(3, totalSteps, "配置文件检查完成：主配置、频道、格式、交互、过滤、审核、占位符和数据库配置已就绪");
+        startupStep(3, totalSteps, "配置文件检查完成：主配置、频道、格式、称号、交互、过滤、审核、占位符和数据库配置已就绪");
 
         text = new TextService(this);
         messages = new MessageService(text);
@@ -108,6 +108,8 @@ public final class AnnaChat extends JavaPlugin {
         RuntimeConfig loaded = runtime();
         startupStep(6, totalSteps, "运行配置加载完成：频道=" + channels.all().size()
                 + "，格式=" + formats.count()
+                + "（规则=" + loaded.formatRules().size() + "）"
+                + "，称号规则=" + loaded.titles().rules().size()
                 + "，审核词条=" + moderation.wordCount()
                 + "，玩家提及=" + (loaded.mentions().enabled() ? "开启" : "关闭")
                 + "，自定义占位符=" + loaded.customPlaceholders().size()
@@ -204,7 +206,7 @@ public final class AnnaChat extends JavaPlugin {
         try {
             database.validate(candidate.database());
             text.applyCustomPlaceholders(candidate.customPlaceholders());
-            formats.apply(candidate.formats());
+            formats.apply(candidate.formats(), candidate.formatRules());
             channels.apply(candidate.channels());
             state.reconcileChannels(channels.ids(), candidate.defaultChannel());
             filters.apply(candidate.filters());

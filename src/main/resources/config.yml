@@ -39,8 +39,32 @@ quick-switch:
 # 玩家拥有对应权限时可使用旧式颜色与 MiniMessage
 formatting:
   # 允许玩家在聊天正文中使用 &a、&l、&#RRGGBB、&x&F&F&0&0&A&A 等颜色与样式代码。
-  # 默认权限 annachat.chat.color 仅 OP 拥有；可用权限插件授予普通玩家。
+  # 旧版总开关仍保留；细分权限见 plugin.yml，可按颜色或样式单独授权。
   legacy-color-permission: annachat.chat.color
+  hex-color-permission: annachat.chat.color.hex
+  color-permissions:
+    black: annachat.chat.color.black
+    dark-blue: annachat.chat.color.dark-blue
+    dark-green: annachat.chat.color.dark-green
+    dark-aqua: annachat.chat.color.dark-aqua
+    dark-red: annachat.chat.color.dark-red
+    dark-purple: annachat.chat.color.dark-purple
+    gold: annachat.chat.color.gold
+    gray: annachat.chat.color.gray
+    dark-gray: annachat.chat.color.dark-gray
+    blue: annachat.chat.color.blue
+    green: annachat.chat.color.green
+    aqua: annachat.chat.color.aqua
+    red: annachat.chat.color.red
+    light-purple: annachat.chat.color.light-purple
+    yellow: annachat.chat.color.yellow
+    white: annachat.chat.color.white
+    obfuscated: annachat.chat.format.obfuscated
+    bold: annachat.chat.format.bold
+    strikethrough: annachat.chat.format.strikethrough
+    underlined: annachat.chat.format.underlined
+    italic: annachat.chat.format.italic
+    reset: annachat.chat.format.reset
   # 允许玩家在聊天正文中使用 MiniMessage 标签。
   minimessage-permission: annachat.chat.minimessage
   # 玩家直接在聊天正文中输入 PAPI 变量所需权限，例如 %player_health%

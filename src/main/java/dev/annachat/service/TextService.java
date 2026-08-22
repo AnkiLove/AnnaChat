@@ -3,6 +3,7 @@ package dev.annachat.service;
 import dev.annachat.AnnaChat;
 import dev.annachat.api.PlaceholderProvider;
 import dev.annachat.api.context.ChatContext;
+import dev.annachat.config.TitleSettings;
 import me.clip.placeholderapi.PlaceholderAPI;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
@@ -39,10 +40,21 @@ public final class TextService {
             Map.entry('m', "strikethrough"), Map.entry('n', "underlined"),
             Map.entry('o', "italic"), Map.entry('r', "reset")
     );
+    private static final Map<Character, String> LEGACY_PERMISSION_KEYS = Map.ofEntries(
+            Map.entry('0', "black"), Map.entry('1', "dark-blue"), Map.entry('2', "dark-green"),
+            Map.entry('3', "dark-aqua"), Map.entry('4', "dark-red"), Map.entry('5', "dark-purple"),
+            Map.entry('6', "gold"), Map.entry('7', "gray"), Map.entry('8', "dark-gray"),
+            Map.entry('9', "blue"), Map.entry('a', "green"), Map.entry('b', "aqua"),
+            Map.entry('c', "red"), Map.entry('d', "light-purple"), Map.entry('e', "yellow"),
+            Map.entry('f', "white"), Map.entry('k', "obfuscated"), Map.entry('l', "bold"),
+            Map.entry('m', "strikethrough"), Map.entry('n', "underlined"), Map.entry('o', "italic"),
+            Map.entry('r', "reset")
+    );
     private final AnnaChat plugin;
     private final MiniMessage miniMessage = MiniMessage.miniMessage();
     private final Map<String, PlaceholderProvider> placeholders = new ConcurrentHashMap<>();
     private final boolean placeholderApiEnabled;
+    private final LuckPermsGroupService groups = new LuckPermsGroupService();
     private volatile Map<String, String> customPlaceholders = Map.of();
 
     public TextService(AnnaChat plugin) {
@@ -77,6 +89,8 @@ public final class TextService {
         Map<String, String> builtins = Map.ofEntries(
                 Map.entry("player", context.senderSnapshot().name()),
                 Map.entry("display_name", context.senderSnapshot().displayName()),
+                Map.entry("title", resolveTitle(context)),
+                Map.entry("group", groups.primaryGroup(context.sender()).orElse("default")),
                 Map.entry("uuid", context.senderSnapshot().uniqueId().toString()),
                 Map.entry("world", context.senderSnapshot().worldKey().asString()),
                 Map.entry("x", Integer.toString((int) Math.floor(context.senderSnapshot().x()))),
@@ -88,7 +102,12 @@ public final class TextService {
                 Map.entry("online", Integer.toString(plugin.onlinePlayers().count()))
         );
         for (Map.Entry<String, String> entry : builtins.entrySet()) {
-            result = result.replace("{" + entry.getKey() + "}", MiniMessage.miniMessage().escapeTags(entry.getValue()));
+            // 称号由管理员配置，允许其中的 MiniMessage/传统颜色码参与最终渲染；
+            // 玩家名称、世界名等外部数据仍必须转义，避免注入标签。
+            String replacement = entry.getKey().equals("title")
+                    ? entry.getValue()
+                    : MiniMessage.miniMessage().escapeTags(entry.getValue());
+            result = result.replace("{" + entry.getKey() + "}", replacement);
         }
         for (Map.Entry<String, PlaceholderProvider> entry : placeholders.entrySet()) {
             String token = "{" + entry.getKey() + "}";
@@ -138,7 +157,7 @@ public final class TextService {
         String result = expandCustomWithoutPlayer(input, new HashSet<>(), 0);
         result = result.replace("{online}", Integer.toString(plugin.onlinePlayers().count()));
         for (String token : List.of(
-                "player", "display_name", "uuid", "world", "x", "y", "z",
+                "player", "display_name", "title", "group", "uuid", "world", "x", "y", "z",
                 "channel", "channel_display", "radius")) {
             result = result.replace("{" + token + "}", "");
         }
@@ -176,12 +195,15 @@ public final class TextService {
             input = PlaceholderAPI.setPlaceholders(context.sender(), input);
         }
         Component body;
-        boolean legacyColors = context.sender().hasPermission(plugin.runtime().legacyColorPermission());
+        String globalColorPermission = plugin.runtime().legacyColorPermission();
+        boolean legacyColors = globalColorPermission != null && !globalColorPermission.isBlank()
+                && context.sender().hasPermission(globalColorPermission);
+        boolean anyLegacyPermission = legacyColors || hasAnyLegacyPermission(context.sender());
         if (context.sender().hasPermission(plugin.runtime().miniMessagePermission())) {
             // OP 默认同时拥有两项权限，因此 MiniMessage 与 & 颜色代码必须能够共存。
-            body = miniMessage.deserialize(playerMiniMessageSafe(input, legacyColors));
-        } else if (legacyColors) {
-            body = legacyPlayerText(input);
+            body = miniMessage.deserialize(playerMiniMessageSafe(input, context.sender(), legacyColors));
+        } else if (anyLegacyPermission) {
+            body = legacyPlayerText(stripUnauthorizedLegacyCodes(input, context.sender(), legacyColors));
         } else {
             body = Component.text(input);
         }
@@ -242,7 +264,53 @@ public final class TextService {
         return miniMessageSafe(input, false);
     }
 
+    private boolean hasAnyLegacyPermission(Player player) {
+        return plugin.runtime().legacyColorPermissions().values().stream().anyMatch(player::hasPermission)
+                || player.hasPermission(plugin.runtime().hexColorPermission());
+    }
+
+    private boolean allowsLegacy(Player player, boolean global, char code, boolean hex) {
+        if (global) return true;
+        if (hex) return player.hasPermission(plugin.runtime().hexColorPermission());
+        String key = LEGACY_PERMISSION_KEYS.get(Character.toLowerCase(code));
+        if (key == null) return true;
+        String permission = plugin.runtime().legacyColorPermissions().get(key);
+        return permission != null && !permission.isBlank() && player.hasPermission(permission);
+    }
+
+    private String stripUnauthorizedLegacyCodes(String input, Player player, boolean global) {
+        if (input == null || input.isEmpty()) return "";
+        StringBuilder output = new StringBuilder(input.length());
+        for (int index = 0; index < input.length(); index++) {
+            char current = input.charAt(index);
+            if ((current != '&' && current != '§') || index + 1 >= input.length()) {
+                output.append(current);
+                continue;
+            }
+            char code = Character.toLowerCase(input.charAt(index + 1));
+            if (code == 'x') {
+                String hex = readLegacyHex(input, index, current);
+                if (hex != null) {
+                    if (allowsLegacy(player, global, code, true)) output.append(input, index, index + 14);
+                    index += 13;
+                    continue;
+                }
+            }
+            if (LEGACY_TAGS.containsKey(code)) {
+                if (allowsLegacy(player, global, code, false)) output.append(current).append(input.charAt(index + 1));
+                index++;
+                continue;
+            }
+            output.append(current);
+        }
+        return output.toString();
+    }
+
     private static String miniMessageSafe(String input, boolean allowAmpersand) {
+        return miniMessageSafe(input, allowAmpersand, (code, hex) -> true);
+    }
+
+    private static String miniMessageSafe(String input, boolean allowAmpersand, LegacyCodePolicy policy) {
         if (input == null || input.isEmpty()
                 || (input.indexOf('§') < 0 && (!allowAmpersand || input.indexOf('&') < 0))) {
             return input == null ? "" : input;
@@ -259,7 +327,7 @@ public final class TextService {
             if (code == 'x') {
                 String hex = readLegacyHex(input, index, current);
                 if (hex != null) {
-                    output.append("<reset><#").append(hex).append('>');
+                    if (policy.allowed('x', true)) output.append("<reset><#").append(hex).append('>');
                     index += 13;
                     continue;
                 }
@@ -271,8 +339,10 @@ public final class TextService {
                 output.append(current);
                 continue;
             }
-            if (isLegacyColor(code)) output.append("<reset>");
-            output.append('<').append(tag).append('>');
+            if (policy.allowed(code, false)) {
+                if (isLegacyColor(code)) output.append("<reset>");
+                output.append('<').append(tag).append('>');
+            }
             index++;
         }
         return output.toString();
@@ -308,5 +378,28 @@ public final class TextService {
 
     static String playerMiniMessageSafe(String input, boolean legacyColors) {
         return miniMessageSafe(input, legacyColors);
+    }
+
+    private String playerMiniMessageSafe(String input, Player player, boolean global) {
+        return miniMessageSafe(input, true, (code, hex) -> allowsLegacy(player, global, code, hex));
+    }
+
+    private String resolveTitle(ChatContext context) {
+        TitleSettings settings = plugin.runtime().titles();
+        if (!settings.enabled()) return "";
+        for (TitleSettings.TitleRule rule : settings.rules()) {
+            if (!rule.permission().isBlank() && !context.sender().hasPermission(rule.permission())) continue;
+            if (!rule.group().isBlank()
+                    && !groups.primaryGroup(context.sender()).map(group -> group.equalsIgnoreCase(rule.group())).orElse(false)) {
+                continue;
+            }
+            return rule.value();
+        }
+        return settings.defaultValue();
+    }
+
+    @FunctionalInterface
+    private interface LegacyCodePolicy {
+        boolean allowed(char code, boolean hex);
     }
 }

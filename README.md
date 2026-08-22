@@ -82,13 +82,30 @@ AnnaChat 是一个以配置为中心的 Minecraft 聊天管理插件。它将频
 
 命令别名：`/ac`、`/achat`。普通玩家默认拥有聊天、频道切换、频道屏蔽和好友管理权限。
 
-## 聊天颜色与玩家提及
+## 称号、聊天颜色与玩家提及
 
-- 拥有 `annachat.chat.color` 权限的玩家可在聊天中使用 `&a`、`&l`、`&#RRGGBB` 和 `&x&F&F&0&0&A&A` 等颜色或样式代码；该权限默认授予 OP。
+- `titles.yml` 独立管理称号，默认值为 `&f[]`，括号属于称号内容的一部分；将 `titles.default.value` 设为空字符串即可隐藏称号。格式中使用 `{title}`。
+- `annachat.chat.color` 仍可作为旧版总权限使用；同时提供 `annachat.chat.color.black` 至 `annachat.chat.color.white`、`annachat.chat.color.hex` 和 `annachat.chat.format.bold` 等细分节点，均默认授予 OP，可单独授权普通玩家。
+- 聊天正文支持 `&0`-`&f`、`&k`-`&o`、`&r`、`&#RRGGBB` 和 `&x&F&F&0&0&A&A`。没有对应权限的代码会被移除，文本内容保留。
 - `annachat.chat.minimessage` 控制玩家直接使用 MiniMessage 标签，同样默认授予 OP。
 - 输入 `@玩家名` 可提及在线玩家，按 Tab 能自动补全名字；`annachat.chat.mention` 默认授予所有玩家。
 - 被提及者只有在实际收到当前频道消息时才会播放铁砧提示音，发送者提及自己不会播放。
 - 提及开关、权限、自动补全、声音、音量和音调均可在 `config.yml` 的 `mentions` 区域热重载。
+
+### 按权限组选择聊天格式
+
+在 `formats.yml` 的 `format-rules` 中为频道基础格式添加规则。规则按 `priority` 从小到大匹配，`permission` 和 `group` 可同时填写；`group` 使用 LuckPerms 主组名，未安装 LuckPerms 时仍可使用权限节点匹配。找不到匹配规则时回退到频道原格式。
+
+```yaml
+format-rules:
+  - base-format: global
+    priority: 10
+    permission: annachat.format.group.admin
+    group: admin
+    format: global-admin
+```
+
+`format` 必须指向 `formats.yml` 中已定义的格式 ID。配置修改后执行 `/annachat reload`，无需重启。
 
 ## 配置文件
 
@@ -97,6 +114,7 @@ AnnaChat 是一个以配置为中心的 Minecraft 聊天管理插件。它将频
 | `config.yml` | 主设置、快捷频道前缀、消息文本、格式权限和启动策略 |
 | `channels.yml` | 频道受众、半径、权限、冷却和格式绑定 |
 | `formats.yml` | 聊天格式片段、悬停文字、点击动作和插入文本 |
+| `titles.yml` | 默认称号、称号权限规则和 LuckPerms 主组称号规则 |
 | `interactions.yml` | 正则交互规则，例如链接、提及和命令建议 |
 | `filters.yml` | 通用过滤器、替换、拦截和影子消息规则 |
 | `moderation.yml` | 脏话/涉政分类、词条、白名单和警告策略 |
@@ -126,7 +144,7 @@ AnnaChat 是一个以配置为中心的 Minecraft 聊天管理插件。它将频
 
 鼠标悬停物品名称即可查看原版物品信息。物品展示不会附加点击动作、执行命令或物品取出功能；`config.yml` 的 `item-display.enabled`、`permission`、`include-armor` 和 `include-offhand` 可控制该功能。
 
-格式片段支持 `{player}`、`{world}`、`{channel_display}` 和 `{custom:键名}`。玩家在聊天正文中使用 PAPI 变量需要 `annachat.chat.placeholders` 权限。
+格式片段支持 `{player}`、`{display_name}`、`{title}`、`{group}`、`{world}`、`{channel_display}` 和 `{custom:键名}`。玩家在聊天正文中使用 PAPI 变量需要 `annachat.chat.placeholders` 权限。
 
 格式片段的点击动作支持：
 
@@ -197,6 +215,6 @@ docs/assets                          README 横幅资源
 
 ## 发布
 
-当前稳定版本：[v1.1.8](https://github.com/AnkiLove/AnnaChat/releases/tag/v1.1.8)
+当前稳定版本：[v1.1.9](https://github.com/AnkiLove/AnnaChat/releases/tag/v1.1.9)
 
 仓库主题标签：`minecraft`、`minecraft-plugin`、`paper`、`folia`、`chat`、`java`、`gradle`、`placeholderapi`、`mysql`、`minimessage`。

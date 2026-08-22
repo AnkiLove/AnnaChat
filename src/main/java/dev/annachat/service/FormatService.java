@@ -3,6 +3,7 @@ package dev.annachat.service;
 import dev.annachat.api.FormatPartProvider;
 import dev.annachat.api.context.ChatContext;
 import dev.annachat.config.FormatDefinition;
+import dev.annachat.config.FormatRule;
 import net.kyori.adventure.text.Component;
 
 import java.util.Locale;
@@ -14,7 +15,9 @@ public final class FormatService {
     private final TextService textService;
     private final InteractionService interactionService;
     private volatile Map<String, FormatDefinition> formats = Map.of();
+    private volatile Map<String, java.util.List<FormatRule>> rules = Map.of();
     private final Map<String, FormatPartProvider> providers = new ConcurrentHashMap<>();
+    private final LuckPermsGroupService groups = new LuckPermsGroupService();
 
     public FormatService(TextService textService, InteractionService interactionService) {
         this.textService = textService;
@@ -31,6 +34,10 @@ public final class FormatService {
     }
 
     public void apply(Map<String, FormatDefinition> formats) {
+        apply(formats, java.util.List.of());
+    }
+
+    public void apply(Map<String, FormatDefinition> formats, java.util.List<FormatRule> formatRules) {
         for (FormatDefinition format : formats.values()) {
             for (FormatDefinition.Part part : format.parts()) {
                 if (!providers.containsKey(part.type())) {
@@ -38,7 +45,24 @@ public final class FormatService {
                 }
             }
         }
+        Map<String, java.util.List<FormatRule>> grouped = new java.util.HashMap<>();
+        for (FormatRule rule : formatRules) {
+            if (!formats.containsKey(rule.format())) {
+                throw new IllegalArgumentException("格式规则引用了不存在的格式: " + rule.format());
+            }
+            if (rule.baseFormat().isBlank() || !formats.containsKey(rule.baseFormat())) {
+                throw new IllegalArgumentException("格式规则的 base-format 不存在: " + rule.baseFormat());
+            }
+            if (rule.permission().isBlank() && rule.group().isBlank()) {
+                throw new IllegalArgumentException("格式规则必须设置 permission 或 group");
+            }
+            grouped.computeIfAbsent(rule.baseFormat(), ignored -> new java.util.ArrayList<>()).add(rule);
+        }
+        grouped.values().forEach(list -> list.sort(java.util.Comparator.comparingInt(FormatRule::priority)));
+        Map<String, java.util.List<FormatRule>> immutable = new java.util.HashMap<>();
+        grouped.forEach((key, value) -> immutable.put(key, java.util.List.copyOf(value)));
         this.formats = Map.copyOf(formats);
+        this.rules = Map.copyOf(immutable);
     }
 
     public void register(String type, FormatPartProvider provider) {
@@ -58,7 +82,9 @@ public final class FormatService {
     }
 
     public Component render(ChatContext context, String formatId) {
-        FormatDefinition format = formats.get(formatId.toLowerCase(Locale.ROOT));
+        String baseId = formatId.toLowerCase(Locale.ROOT);
+        String selectedId = selectFormat(context, baseId);
+        FormatDefinition format = formats.get(selectedId);
         if (format == null) throw new IllegalStateException("找不到聊天格式 " + context.channel().formatId());
         Component result = Component.empty();
         for (FormatDefinition.Part part : format.parts()) {
@@ -67,6 +93,19 @@ public final class FormatService {
             result = result.append(provider.render(context, part.configuration()));
         }
         return result;
+    }
+
+    private String selectFormat(ChatContext context, String baseId) {
+        for (FormatRule rule : rules.getOrDefault(baseId, java.util.List.of())) {
+            if (!rule.permission().isBlank() && !context.sender().hasPermission(rule.permission())) continue;
+            if (!rule.group().isBlank()
+                    && !groups.primaryGroup(context.sender())
+                    .map(group -> group.equalsIgnoreCase(rule.group())).orElse(false)) {
+                continue;
+            }
+            return rule.format();
+        }
+        return baseId;
     }
 
     public int count() {

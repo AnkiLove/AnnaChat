@@ -26,7 +26,7 @@ import java.util.regex.PatternSyntaxException;
 public final class ConfigManager {
     private static final List<String> FILES = List.of(
             "channels.yml", "formats.yml", "interactions.yml", "filters.yml", "messages.yml",
-            "moderation.yml", "placeholders.yml", "database.yml"
+            "moderation.yml", "placeholders.yml", "database.yml", "titles.yml"
     );
 
     private final AnnaChat plugin;
@@ -44,6 +44,37 @@ public final class ConfigManager {
         }
         migrateLegacyChannelDefaults();
         migrateLegacyMentionInteraction();
+        migrateLegacyTitles();
+    }
+
+    /** 将旧版本可能写在 config.yml 中的称号迁移到独立 titles.yml。 */
+    private void migrateLegacyTitles() {
+        File mainFile = new File(plugin.getDataFolder(), "config.yml");
+        File titleFile = new File(plugin.getDataFolder(), "titles.yml");
+        YamlConfiguration main = YamlConfiguration.loadConfiguration(mainFile);
+        YamlConfiguration titles = YamlConfiguration.loadConfiguration(titleFile);
+        List<String> legacyPaths = List.of(
+                "formatting.default-title", "formatting.title", "chat.default-title", "chat.title",
+                "title.default", "titles.default"
+        );
+        String legacyPath = legacyPaths.stream().filter(main::contains).findFirst().orElse(null);
+        if (legacyPath == null) return;
+        backupOnce(mainFile, "config.yml.pre-1.1.9-title.bak");
+        String oldValue = main.isConfigurationSection(legacyPath)
+                ? main.getString(legacyPath + ".value", "")
+                : Objects.toString(main.get(legacyPath), "");
+        String current = titles.getString("titles.default.value", "&f[]");
+        if ("&f[]".equals(current) || !titles.contains("titles.default.value")) {
+            titles.set("titles.default.value", oldValue);
+        }
+        for (String path : legacyPaths) main.set(path, null);
+        try {
+            titles.save(titleFile);
+            main.save(mainFile);
+            plugin.getLogger().info("已将旧版 config.yml 中的默认称号迁移到 titles.yml；原配置已备份");
+        } catch (IOException exception) {
+            throw new IllegalStateException("保存称号配置迁移失败", exception);
+        }
     }
 
     /**
@@ -228,9 +259,11 @@ public final class ConfigManager {
         YamlConfiguration messagesFile = loadFile("messages.yml");
         YamlConfiguration placeholdersFile = loadFile("placeholders.yml");
         YamlConfiguration databaseFile = loadFile("database.yml");
+        YamlConfiguration titlesFile = loadFile("titles.yml");
 
         Map<String, ConfiguredChannel> channels = loadChannels(channelsFile);
         Map<String, FormatDefinition> formats = loadFormats(formatsFile);
+        List<FormatRule> formatRules = loadFormatRules(formatsFile);
         for (ConfiguredChannel channel : channels.values()) {
             if (!formats.containsKey(channel.formatId().toLowerCase(Locale.ROOT))) {
                 throw new IllegalArgumentException("频道 " + channel.id() + " 引用了不存在的格式 " + channel.formatId());
@@ -284,6 +317,8 @@ public final class ConfigManager {
         return new RuntimeConfig(
                 Map.copyOf(channels),
                 Map.copyOf(formats),
+                List.copyOf(formatRules),
+                loadTitles(titlesFile),
                 loadInteractions(interactionsFile, textService),
                 loadFilters(filtersFile),
                 loadModeration(moderationFile),
@@ -308,6 +343,8 @@ public final class ConfigManager {
                 mainFile.getBoolean("settings.notify-when-no-other-recipients", false),
                 mainFile.getBoolean("settings.log-chat", true),
                 mainFile.getString("formatting.legacy-color-permission", "annachat.chat.color"),
+                loadColorPermissions(mainFile),
+                mainFile.getString("formatting.hex-color-permission", "annachat.chat.color.hex"),
                 mainFile.getString("formatting.minimessage-permission", "annachat.chat.minimessage"),
                 mainFile.getString("formatting.player-message-placeholders-permission", "annachat.chat.placeholders"),
                 Map.copyOf(customPlaceholders),
@@ -439,6 +476,85 @@ public final class ConfigManager {
             formats.put(id, new FormatDefinition(id, List.copyOf(parts)));
         }
         return formats;
+    }
+
+    private List<FormatRule> loadFormatRules(YamlConfiguration file) {
+        List<FormatRule> result = new ArrayList<>();
+        for (Map<?, ?> raw : file.getMapList("format-rules")) {
+            String base = Objects.toString(raw.get("base-format"), "").strip();
+            String target = Objects.toString(raw.get("format"), "").strip();
+            if (base.isBlank() || target.isBlank()) {
+                throw new IllegalArgumentException("格式规则必须包含 base-format 和 format");
+            }
+            result.add(new FormatRule(
+                    base,
+                    raw.get("priority") instanceof Number number ? number.intValue() : 1000,
+                    Objects.toString(raw.get("permission"), ""),
+                    Objects.toString(raw.get("group"), ""),
+                    target
+            ));
+        }
+        result.sort(Comparator.comparingInt(FormatRule::priority));
+        return List.copyOf(result);
+    }
+
+    private TitleSettings loadTitles(YamlConfiguration file) {
+        ConfigurationSection root = requiredSection(file, "titles");
+        ConfigurationSection defaultSection = root.getConfigurationSection("default");
+        boolean enabled = defaultSection == null || defaultSection.getBoolean("enabled", true);
+        String defaultValue = defaultSection == null
+                ? root.getString("default", "&f[]")
+                : defaultSection.getString("value", "");
+        List<TitleSettings.TitleRule> rules = new ArrayList<>();
+        ConfigurationSection groups = root.getConfigurationSection("rules");
+        if (groups != null) {
+            for (String id : groups.getKeys(false)) {
+                ConfigurationSection section = requiredSection(groups, id);
+                if (!section.getBoolean("enabled", true)) continue;
+                String value = section.getString("value", "");
+                rules.add(new TitleSettings.TitleRule(
+                        section.getInt("priority", 1000),
+                        section.getString("permission", ""),
+                        section.getString("group", ""),
+                        value
+                ));
+            }
+        }
+        rules.sort(Comparator.comparingInt(TitleSettings.TitleRule::priority));
+        return new TitleSettings(enabled, defaultValue, rules);
+    }
+
+    private static Map<String, String> loadColorPermissions(YamlConfiguration file) {
+        Map<String, String> defaults = new LinkedHashMap<>();
+        Map<String, String> keys = Map.ofEntries(
+                Map.entry("black", "annachat.chat.color.black"),
+                Map.entry("dark-blue", "annachat.chat.color.dark-blue"),
+                Map.entry("dark-green", "annachat.chat.color.dark-green"),
+                Map.entry("dark-aqua", "annachat.chat.color.dark-aqua"),
+                Map.entry("dark-red", "annachat.chat.color.dark-red"),
+                Map.entry("dark-purple", "annachat.chat.color.dark-purple"),
+                Map.entry("gold", "annachat.chat.color.gold"),
+                Map.entry("gray", "annachat.chat.color.gray"),
+                Map.entry("dark-gray", "annachat.chat.color.dark-gray"),
+                Map.entry("blue", "annachat.chat.color.blue"),
+                Map.entry("green", "annachat.chat.color.green"),
+                Map.entry("aqua", "annachat.chat.color.aqua"),
+                Map.entry("red", "annachat.chat.color.red"),
+                Map.entry("light-purple", "annachat.chat.color.light-purple"),
+                Map.entry("yellow", "annachat.chat.color.yellow"),
+                Map.entry("white", "annachat.chat.color.white"),
+                Map.entry("obfuscated", "annachat.chat.format.obfuscated"),
+                Map.entry("bold", "annachat.chat.format.bold"),
+                Map.entry("strikethrough", "annachat.chat.format.strikethrough"),
+                Map.entry("underlined", "annachat.chat.format.underlined"),
+                Map.entry("italic", "annachat.chat.format.italic"),
+                Map.entry("reset", "annachat.chat.format.reset")
+        );
+        for (Map.Entry<String, String> entry : keys.entrySet()) {
+            String path = "formatting.color-permissions." + entry.getKey();
+            defaults.put(entry.getKey(), Objects.toString(file.getString(path, entry.getValue()), entry.getValue()));
+        }
+        return Map.copyOf(defaults);
     }
 
     private static void copyValue(ConfigurationSection target, String path, Object value) {

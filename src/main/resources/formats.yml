@@ -7,11 +7,20 @@
 # message 片段：
 #   style     玩家消息的外层 MiniMessage 样式
 #
-# 内置变量：{player} {display_name} {uuid} {world} {x} {y} {z}
+# 内置变量：{player} {display_name} {title} {group} {uuid} {world} {x} {y} {z}
 #          {channel} {channel_display} {radius} {online}
 # 自定义变量：{custom:键名}
 # 同时支持 PlaceholderAPI，例如 %player_prefix%。
 schema-version: 4
+# 可选格式选择规则。按 priority 从小到大匹配，命中后使用 format 指向的格式。
+# permission 与 group 可同时填写；group 使用 LuckPerms 主组名。
+# format-rules:
+#   - base-format: global
+#     priority: 10
+#     permission: annachat.format.group.admin
+#     group: admin
+#     format: global-admin
+format-rules: []
 formats:
   global:
     parts:
@@ -23,7 +32,7 @@ formats:
           action: RUN_COMMAND
           value: '/annachat channel global'
       - type: text
-        content: '<white>{player}</white>'
+        content: '<white>{title}{player}</white>'
         hover:
           - '<gray>玩家：<white>{player}</white></gray>'
           - '<gray>世界：<white>{world}</white></gray>'
@@ -49,7 +58,7 @@ formats:
           action: RUN_COMMAND
           value: '/annachat channel local'
       - type: text
-        content: '<white>{player}</white>&8 » '
+        content: '<white>{title}{player}</white>&8 » '
         hover:
           - '<gray>点击填入私聊命令</gray>'
         click:
@@ -68,7 +77,7 @@ formats:
           action: RUN_COMMAND
           value: '/annachat channel friends'
       - type: text
-        content: '<white>{player}</white>&8 » '
+        content: '<white>{title}{player}</white>&8 » '
         hover:
           - '<gray>点击填入私聊命令</gray>'
         click:

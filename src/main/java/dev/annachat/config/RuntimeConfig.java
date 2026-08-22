@@ -9,6 +9,8 @@ import java.util.Map;
 public record RuntimeConfig(
         Map<String, ConfiguredChannel> channels,
         Map<String, FormatDefinition> formats,
+        List<FormatRule> formatRules,
+        TitleSettings titles,
         List<ConfiguredInteraction> interactions,
         List<ConfiguredFilter> filters,
         ModerationSettings moderation,
@@ -28,6 +30,8 @@ public record RuntimeConfig(
         boolean notifyWhenNoOtherRecipients,
         boolean logChat,
         String legacyColorPermission,
+        Map<String, String> legacyColorPermissions,
+        String hexColorPermission,
         String miniMessagePermission,
         String playerMessagePlaceholdersPermission,
         Map<String, String> customPlaceholders,

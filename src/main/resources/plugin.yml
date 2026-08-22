@@ -7,6 +7,7 @@ load: POSTWORLD
 folia-supported: true
 softdepend:
   - PlaceholderAPI
+  - LuckPerms
 commands:
   annachat:
     description: AnnaChat 主命令
@@ -31,12 +32,66 @@ permissions:
     default: true
   annachat.chat.color:
     default: op
+  annachat.chat.color.*:
+    default: op
+  annachat.chat.color.black:
+    default: op
+  annachat.chat.color.dark-blue:
+    default: op
+  annachat.chat.color.dark-green:
+    default: op
+  annachat.chat.color.dark-aqua:
+    default: op
+  annachat.chat.color.dark-red:
+    default: op
+  annachat.chat.color.dark-purple:
+    default: op
+  annachat.chat.color.gold:
+    default: op
+  annachat.chat.color.gray:
+    default: op
+  annachat.chat.color.dark-gray:
+    default: op
+  annachat.chat.color.blue:
+    default: op
+  annachat.chat.color.green:
+    default: op
+  annachat.chat.color.aqua:
+    default: op
+  annachat.chat.color.red:
+    default: op
+  annachat.chat.color.light-purple:
+    default: op
+  annachat.chat.color.yellow:
+    default: op
+  annachat.chat.color.white:
+    default: op
+  annachat.chat.color.hex:
+    default: op
+  annachat.chat.format.*:
+    default: op
+  annachat.chat.format.obfuscated:
+    default: op
+  annachat.chat.format.bold:
+    default: op
+  annachat.chat.format.strikethrough:
+    default: op
+  annachat.chat.format.underlined:
+    default: op
+  annachat.chat.format.italic:
+    default: op
+  annachat.chat.format.reset:
+    default: op
   annachat.chat.mention:
     default: true
   annachat.chat.minimessage:
     default: op
   annachat.chat.placeholders:
     default: op
+  annachat.format.group.*:
+    default: false
+  annachat.title.*:
+    default: false
   annachat.bypass.cooldown:
     default: op
   annachat.bypass.filter:
