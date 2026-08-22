@@ -85,7 +85,7 @@ AnnaChat 是一个以配置为中心的 Minecraft 聊天管理插件。它将频
 ## 称号、聊天颜色与玩家提及
 
 - `titles.yml` 独立管理称号，默认值为 `&f[]`，括号属于称号内容的一部分；将 `titles.default.value` 设为空字符串即可隐藏称号。格式中使用 `{title}`。
-- `annachat.chat.color` 仍可作为旧版总权限使用；同时提供 `annachat.chat.color.black` 至 `annachat.chat.color.white`、`annachat.chat.color.hex` 和 `annachat.chat.format.bold` 等细分节点，均默认授予 OP，可单独授权普通玩家。
+- `annachat.chat.color` 仍可作为旧版总权限使用；推荐使用与输入符号一致的细分节点：`annachat.chat.color.&0` 至 `annachat.chat.color.&f`、`annachat.chat.color.hex`、`annachat.chat.format.&k` 至 `annachat.chat.format.&o` 和 `annachat.chat.format.&r`，均默认授予 OP，可单独授权普通玩家。旧的英文后缀节点仍保留兼容。
 - 聊天正文支持 `&0`-`&f`、`&k`-`&o`、`&r`、`&#RRGGBB` 和 `&x&F&F&0&0&A&A`。没有对应权限的代码会被移除，文本内容保留。
 - `annachat.chat.minimessage` 控制玩家直接使用 MiniMessage 标签，同样默认授予 OP。
 - 输入 `@玩家名` 可提及在线玩家，按 Tab 能自动补全名字；`annachat.chat.mention` 默认授予所有玩家。
@@ -215,6 +215,6 @@ docs/assets                          README 横幅资源
 
 ## 发布
 
-当前稳定版本：[v1.1.9](https://github.com/AnkiLove/AnnaChat/releases/tag/v1.1.9)
+当前稳定版本：[v1.1.10](https://github.com/AnkiLove/AnnaChat/releases/tag/v1.1.10)
 
 仓库主题标签：`minecraft`、`minecraft-plugin`、`paper`、`folia`、`chat`、`java`、`gradle`、`placeholderapi`、`mysql`、`minimessage`。

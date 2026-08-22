@@ -34,6 +34,38 @@ permissions:
     default: op
   annachat.chat.color.*:
     default: op
+  "annachat.chat.color.&0":
+    default: op
+  "annachat.chat.color.&1":
+    default: op
+  "annachat.chat.color.&2":
+    default: op
+  "annachat.chat.color.&3":
+    default: op
+  "annachat.chat.color.&4":
+    default: op
+  "annachat.chat.color.&5":
+    default: op
+  "annachat.chat.color.&6":
+    default: op
+  "annachat.chat.color.&7":
+    default: op
+  "annachat.chat.color.&8":
+    default: op
+  "annachat.chat.color.&9":
+    default: op
+  "annachat.chat.color.&a":
+    default: op
+  "annachat.chat.color.&b":
+    default: op
+  "annachat.chat.color.&c":
+    default: op
+  "annachat.chat.color.&d":
+    default: op
+  "annachat.chat.color.&e":
+    default: op
+  "annachat.chat.color.&f":
+    default: op
   annachat.chat.color.black:
     default: op
   annachat.chat.color.dark-blue:
@@ -69,6 +101,18 @@ permissions:
   annachat.chat.color.hex:
     default: op
   annachat.chat.format.*:
+    default: op
+  "annachat.chat.format.&k":
+    default: op
+  "annachat.chat.format.&l":
+    default: op
+  "annachat.chat.format.&m":
+    default: op
+  "annachat.chat.format.&n":
+    default: op
+  "annachat.chat.format.&o":
+    default: op
+  "annachat.chat.format.&r":
     default: op
   annachat.chat.format.obfuscated:
     default: op

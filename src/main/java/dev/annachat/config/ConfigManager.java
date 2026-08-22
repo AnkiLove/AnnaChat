@@ -45,6 +45,44 @@ public final class ConfigManager {
         migrateLegacyChannelDefaults();
         migrateLegacyMentionInteraction();
         migrateLegacyTitles();
+        migrateLegacyColorPermissions();
+    }
+
+    /** 将内置英文颜色权限迁移为与输入符号一致的 & 后缀，自定义节点不改动。 */
+    private void migrateLegacyColorPermissions() {
+        File mainFile = new File(plugin.getDataFolder(), "config.yml");
+        YamlConfiguration main = YamlConfiguration.loadConfiguration(mainFile);
+        Map<String, String> oldToNew = new LinkedHashMap<>();
+        String[] colors = {"black", "dark-blue", "dark-green", "dark-aqua", "dark-red", "dark-purple",
+                "gold", "gray", "dark-gray", "blue", "green", "aqua", "red", "light-purple", "yellow", "white"};
+        String[] codes = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f"};
+        for (int index = 0; index < colors.length; index++) {
+            oldToNew.put("formatting.color-permissions." + colors[index],
+                    "annachat.chat.color." + colors[index] + "||annachat.chat.color.&" + codes[index]);
+        }
+        Map<String, String> formats = Map.of(
+                "obfuscated", "k", "bold", "l", "strikethrough", "m",
+                "underlined", "n", "italic", "o", "reset", "r"
+        );
+        formats.forEach((name, code) -> oldToNew.put("formatting.color-permissions." + name,
+                "annachat.chat.format." + name + "||annachat.chat.format.&" + code));
+        boolean changed = false;
+        for (Map.Entry<String, String> entry : oldToNew.entrySet()) {
+            String path = entry.getKey();
+            String current = main.getString(path, "");
+            String[] values = entry.getValue().split("\\|\\|", 2);
+            if (!current.equals(values[0])) continue;
+            main.set(path, values[1]);
+            changed = true;
+        }
+        if (!changed) return;
+        backupOnce(mainFile, "config.yml.pre-1.1.10-color-permissions.bak");
+        try {
+            main.save(mainFile);
+            plugin.getLogger().info("已将旧版颜色权限迁移为 & 符号后缀；自定义权限保持不变，原配置已备份");
+        } catch (IOException exception) {
+            throw new IllegalStateException("保存颜色权限迁移配置失败", exception);
+        }
     }
 
     /** 将旧版本可能写在 config.yml 中的称号迁移到独立 titles.yml。 */
@@ -527,28 +565,28 @@ public final class ConfigManager {
     private static Map<String, String> loadColorPermissions(YamlConfiguration file) {
         Map<String, String> defaults = new LinkedHashMap<>();
         Map<String, String> keys = Map.ofEntries(
-                Map.entry("black", "annachat.chat.color.black"),
-                Map.entry("dark-blue", "annachat.chat.color.dark-blue"),
-                Map.entry("dark-green", "annachat.chat.color.dark-green"),
-                Map.entry("dark-aqua", "annachat.chat.color.dark-aqua"),
-                Map.entry("dark-red", "annachat.chat.color.dark-red"),
-                Map.entry("dark-purple", "annachat.chat.color.dark-purple"),
-                Map.entry("gold", "annachat.chat.color.gold"),
-                Map.entry("gray", "annachat.chat.color.gray"),
-                Map.entry("dark-gray", "annachat.chat.color.dark-gray"),
-                Map.entry("blue", "annachat.chat.color.blue"),
-                Map.entry("green", "annachat.chat.color.green"),
-                Map.entry("aqua", "annachat.chat.color.aqua"),
-                Map.entry("red", "annachat.chat.color.red"),
-                Map.entry("light-purple", "annachat.chat.color.light-purple"),
-                Map.entry("yellow", "annachat.chat.color.yellow"),
-                Map.entry("white", "annachat.chat.color.white"),
-                Map.entry("obfuscated", "annachat.chat.format.obfuscated"),
-                Map.entry("bold", "annachat.chat.format.bold"),
-                Map.entry("strikethrough", "annachat.chat.format.strikethrough"),
-                Map.entry("underlined", "annachat.chat.format.underlined"),
-                Map.entry("italic", "annachat.chat.format.italic"),
-                Map.entry("reset", "annachat.chat.format.reset")
+                Map.entry("black", "annachat.chat.color.&0"),
+                Map.entry("dark-blue", "annachat.chat.color.&1"),
+                Map.entry("dark-green", "annachat.chat.color.&2"),
+                Map.entry("dark-aqua", "annachat.chat.color.&3"),
+                Map.entry("dark-red", "annachat.chat.color.&4"),
+                Map.entry("dark-purple", "annachat.chat.color.&5"),
+                Map.entry("gold", "annachat.chat.color.&6"),
+                Map.entry("gray", "annachat.chat.color.&7"),
+                Map.entry("dark-gray", "annachat.chat.color.&8"),
+                Map.entry("blue", "annachat.chat.color.&9"),
+                Map.entry("green", "annachat.chat.color.&a"),
+                Map.entry("aqua", "annachat.chat.color.&b"),
+                Map.entry("red", "annachat.chat.color.&c"),
+                Map.entry("light-purple", "annachat.chat.color.&d"),
+                Map.entry("yellow", "annachat.chat.color.&e"),
+                Map.entry("white", "annachat.chat.color.&f"),
+                Map.entry("obfuscated", "annachat.chat.format.&k"),
+                Map.entry("bold", "annachat.chat.format.&l"),
+                Map.entry("strikethrough", "annachat.chat.format.&m"),
+                Map.entry("underlined", "annachat.chat.format.&n"),
+                Map.entry("italic", "annachat.chat.format.&o"),
+                Map.entry("reset", "annachat.chat.format.&r")
         );
         for (Map.Entry<String, String> entry : keys.entrySet()) {
             String path = "formatting.color-permissions." + entry.getKey();
