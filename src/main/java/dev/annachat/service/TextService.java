@@ -312,7 +312,8 @@ public final class TextService {
                     || (kind.equals("transition") && transition);
             if (permitted) {
                 // 先替换为不会被 MiniMessage 识别的占位符，整体转义后再恢复标签。
-                String token = "__ANNACHAT_ADVANCED_TAG_" + (index++) + "__";
+                String token = String.valueOf((char) 1) + "ANNACHAT_ADVANCED_TAG_"
+                        + (index++) + String.valueOf((char) 2);
                 allowed.put(token, tag);
                 matcher.appendReplacement(buffer, Matcher.quoteReplacement(token));
             } else {
