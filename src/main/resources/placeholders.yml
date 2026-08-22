@@ -8,7 +8,8 @@
 # 循环引用会被安全终止并输出空字符串。
 #
 # 可用内置变量：
-# {player} {display_name} {title} {group} {uuid} {world} {x} {y} {z}
+# {player} {name} {display_name} {displayname} {nickname} {title} {group} {message}
+# {uuid} {world} {x} {y} {z}
 # {channel} {channel_display} {radius} {online}
 custom-placeholders:
   server_status: '<green>在线</green>'

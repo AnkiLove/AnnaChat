@@ -1,0 +1,43 @@
+# 聊天权限组策略。修改后执行 /annachat reload 热重载。
+# detection-mode: PERMISSION、LUCKPERMS_GROUP 或 ANY。
+# 数值为 -1 表示沿用频道或主配置；priority 越大越优先。
+schema-version: 1
+enabled: true
+detection-mode: PERMISSION
+default:
+  cooldown-millis: -1
+  max-message-length: -1
+  max-mentions: -1
+  bypass-moderation: false
+  bypass-filter: false
+  bypass-cooldown: false
+definitions:
+  member:
+    priority: 100
+    permission: annachat.group.member
+    cooldown-millis: -1
+    max-message-length: -1
+    max-mentions: 3
+    bypass-moderation: false
+    bypass-filter: false
+    bypass-cooldown: false
+  staff:
+    priority: 900
+    permission: annachat.group.staff
+    group: staff
+    cooldown-millis: 0
+    max-message-length: 512
+    max-mentions: 15
+    bypass-moderation: false
+    bypass-filter: false
+    bypass-cooldown: true
+  admin:
+    priority: 1000
+    permission: annachat.group.admin
+    group: admin
+    cooldown-millis: 0
+    max-message-length: 1000
+    max-mentions: -1
+    bypass-moderation: true
+    bypass-filter: true
+    bypass-cooldown: true

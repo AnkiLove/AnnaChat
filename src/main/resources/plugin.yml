@@ -136,6 +136,12 @@ permissions:
     default: false
   annachat.title.*:
     default: false
+  annachat.group.member:
+    default: true
+  annachat.group.staff:
+    default: false
+  annachat.group.admin:
+    default: op
   annachat.bypass.cooldown:
     default: op
   annachat.bypass.filter:

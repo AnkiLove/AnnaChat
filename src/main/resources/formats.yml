@@ -1,4 +1,6 @@
 # 格式由多个片段顺序拼接。type 可使用 text、message，附属插件可注册更多类型。
+# 每个格式可设置 part-separator；片段也支持 text 作为 content 的别名，
+# 以及 suggest/run/open/copy 作为 click.action 的简写。
 # text 片段：
 #   content   MiniMessage 正文；同时支持传统 &0-&f、&k-&r 与 &x 十六进制颜色代码
 #   hover     鼠标悬停文字列表

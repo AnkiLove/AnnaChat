@@ -7,6 +7,7 @@ import dev.annachat.api.ModerationMatch;
 import dev.annachat.api.PostChatHandler;
 import dev.annachat.api.context.ChatContext;
 import dev.annachat.api.context.PlayerSnapshot;
+import dev.annachat.config.GroupPolicy;
 import dev.annachat.api.event.AnnaChatPostEvent;
 import dev.annachat.api.event.AnnaChatProcessEvent;
 import dev.annachat.model.HistoryEntry;
@@ -80,12 +81,15 @@ public final class ChatPipeline {
             messages.send(sender, "channel-not-found", Map.of("channel", channel.id()));
             return;
         }
+        GroupPolicy groupPolicy = plugin.runtime().groups().resolve(sender);
         if (channel.permission() != null && !channel.permission().isBlank() && !sender.hasPermission(channel.permission())) {
             messages.send(sender, "channel-denied", Map.of("channel", channel.id()));
             return;
         }
-        if (message.codePointCount(0, message.length()) > plugin.runtime().maxMessageLength()) {
-            messages.send(sender, "too-long", Map.of("max", Integer.toString(plugin.runtime().maxMessageLength())));
+        int maxMessageLength = groupPolicy.maxMessageLength() > 0
+                ? groupPolicy.maxMessageLength() : plugin.runtime().maxMessageLength();
+        if (message.codePointCount(0, message.length()) > maxMessageLength) {
+            messages.send(sender, "too-long", Map.of("max", Integer.toString(maxMessageLength)));
             return;
         }
         Optional<MuteEntry> mute = state.mute(sender.getUniqueId());
@@ -97,11 +101,13 @@ public final class ChatPipeline {
             ));
             return;
         }
-        long cooldown = channel.cooldownMillis() >= 0
+        long cooldown = groupPolicy.cooldownMillis() >= 0
+                ? groupPolicy.cooldownMillis()
+                : channel.cooldownMillis() >= 0
                 ? channel.cooldownMillis()
                 : plugin.runtime().defaultCooldownMillis();
         long remaining = state.cooldownRemaining(sender.getUniqueId(), cooldown);
-        if (remaining > 0 && !sender.hasPermission("annachat.bypass.cooldown")) {
+        if (remaining > 0 && !groupPolicy.bypassCooldown() && !sender.hasPermission("annachat.bypass.cooldown")) {
             messages.send(sender, "cooldown", Map.of("remaining", String.format(Locale.ROOT, "%.2f", remaining / 1000.0)));
             return;
         }
@@ -109,7 +115,8 @@ public final class ChatPipeline {
         ChatContext context = new ChatContext(sender, PlayerSnapshot.capture(sender), channel, message);
         processors.process(context);
         if (context.cancelled()) return;
-        if (moderation.enabled() && !sender.hasPermission(moderation.bypassPermission())) {
+        if (moderation.enabled() && !groupPolicy.bypassModeration()
+                && !sender.hasPermission(moderation.bypassPermission())) {
             // 始终检查玩家提交的原文，防止外部消息处理器先替换文本后绕过审核。
             Optional<ModerationMatch> moderationMatch = moderation.inspect(context.originalMessage());
             if (moderationMatch.isPresent()) {
@@ -132,7 +139,7 @@ public final class ChatPipeline {
                 return;
             }
         }
-        if (!sender.hasPermission("annachat.bypass.filter")) {
+        if (!groupPolicy.bypassFilter() && !sender.hasPermission("annachat.bypass.filter")) {
             FilterResult result = filters.process(context);
             if (result.action() == FilterResult.Action.BLOCK) {
                 messages.send(sender, "blocked", Map.of("reason", Objects.toString(result.reason(), "未通过规则")));
@@ -146,7 +153,12 @@ public final class ChatPipeline {
         Bukkit.getPluginManager().callEvent(processEvent);
         if (processEvent.isCancelled()) return;
 
-        mentions.capture(context);
+        int mentionedCount = mentions.capture(context);
+        if (groupPolicy.maxMentions() >= 0 && mentionedCount > groupPolicy.maxMentions()) {
+            messages.send(sender, "too-many-mentions", Map.of(
+                    "max", Integer.toString(groupPolicy.maxMentions())));
+            return;
+        }
 
         Component rendered;
         try {

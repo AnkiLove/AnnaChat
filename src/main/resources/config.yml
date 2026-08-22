@@ -70,6 +70,8 @@ formatting:
   minimessage-permission: annachat.chat.minimessage
   # 玩家直接在聊天正文中输入 PAPI 变量所需权限，例如 %player_health%
   player-message-placeholders-permission: annachat.chat.placeholders
+  # PlaceholderAPI 返回未解析的 %name% 时是否自动移除。
+  strip-unresolved-placeholders: false
   strip-unknown-tags: true
 
 storage:
@@ -132,6 +134,7 @@ messages:
   too-long: '<red>消息过长，最多允许 {max} 个字符。</red>'
   blocked: '<red>消息未通过聊天规则：<white>{reason}</white></red>'
   no-recipients: '<yellow>当前频道内没有其他接收者。</yellow>'
+  too-many-mentions: '<red>本条消息最多只能提及 <white>{max}</white> 名玩家。</red>'
   player-not-found: '<red>找不到在线玩家 <white>{player}</white>。</red>'
   invalid-duration: '<red>时长格式无效，可使用 30m、2h、7d 或 永久。</red>'
   invalid-page: '<red>页码无效。</red>'

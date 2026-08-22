@@ -87,6 +87,7 @@ AnnaChat 是一个以配置为中心的 Minecraft 聊天管理插件。它将频
 - `titles.yml` 独立管理称号，默认值为 `&f[]`，括号属于称号内容的一部分；将 `titles.default.value` 设为空字符串即可隐藏称号。格式中使用 `{title}`。
 - `annachat.chat.color` 仍可作为旧版总权限使用；推荐使用与输入符号一致的细分节点：`annachat.chat.color.&0` 至 `annachat.chat.color.&f`、`annachat.chat.color.hex`、`annachat.chat.format.&k` 至 `annachat.chat.format.&o` 和 `annachat.chat.format.&r`，均默认授予 OP，可单独授权普通玩家。旧的英文后缀节点仍保留兼容。
 - 聊天正文支持 `&0`-`&f`、`&k`-`&o`、`&r`、`&#RRGGBB` 和 `&x&F&F&0&0&A&A`。没有对应权限的代码会被移除，文本内容保留。
+- `groups.yml` 可按权限节点或 LuckPerms 主组覆盖聊天冷却、消息长度、最大提及数、审核绕过和过滤绕过策略；规则按优先级匹配，数值为 `-1` 时继承频道或主配置。
 - `annachat.chat.minimessage` 控制玩家直接使用 MiniMessage 标签，同样默认授予 OP。
 - 输入 `@玩家名` 可提及在线玩家，按 Tab 能自动补全名字；`annachat.chat.mention` 默认授予所有玩家。
 - 被提及者只有在实际收到当前频道消息时才会播放铁砧提示音，发送者提及自己不会播放。
@@ -107,6 +108,8 @@ format-rules:
 
 `format` 必须指向 `formats.yml` 中已定义的格式 ID。配置修改后执行 `/annachat reload`，无需重启。
 
+格式片段还支持 `part-separator`、`text` 内容别名，以及 `suggest`、`run`、`open`、`copy` 点击简写；原有 `click.action/click.value` 写法继续有效。文本内容可以写成列表，列表项会以换行连接。
+
 ## 配置文件
 
 | 文件 | 作用 |
@@ -115,6 +118,7 @@ format-rules:
 | `channels.yml` | 频道受众、半径、权限、冷却和格式绑定 |
 | `formats.yml` | 聊天格式片段、悬停文字、点击动作和插入文本 |
 | `titles.yml` | 默认称号、称号权限规则和 LuckPerms 主组称号规则 |
+| `groups.yml` | 权限组/主组聊天策略与消息限制 |
 | `interactions.yml` | 正则交互规则，例如链接、提及和命令建议 |
 | `filters.yml` | 通用过滤器、替换、拦截和影子消息规则 |
 | `moderation.yml` | 脏话/涉政分类、词条、白名单和警告策略 |
@@ -215,6 +219,6 @@ docs/assets                          README 横幅资源
 
 ## 发布
 
-当前稳定版本：[v1.1.10](https://github.com/AnkiLove/AnnaChat/releases/tag/v1.1.10)
+当前稳定版本：[v1.1.11](https://github.com/AnkiLove/AnnaChat/releases/tag/v1.1.11)
 
 仓库主题标签：`minecraft`、`minecraft-plugin`、`paper`、`folia`、`chat`、`java`、`gradle`、`placeholderapi`、`mysql`、`minimessage`。

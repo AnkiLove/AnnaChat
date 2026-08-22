@@ -27,6 +27,7 @@ public final class TextService {
             .useUnusualXRepeatedCharacterHexFormat()
             .build();
     private static final Pattern CUSTOM_TOKEN = Pattern.compile("\\{custom:([a-zA-Z0-9_]+)}");
+    private static final Pattern UNRESOLVED_PLACEHOLDER = Pattern.compile("%[a-zA-Z0-9_:-]+%");
     private static final Map<Character, String> LEGACY_TAGS = Map.ofEntries(
             Map.entry('0', "black"), Map.entry('1', "dark_blue"),
             Map.entry('2', "dark_green"), Map.entry('3', "dark_aqua"),
@@ -88,9 +89,13 @@ public final class TextService {
         String result = input;
         Map<String, String> builtins = Map.ofEntries(
                 Map.entry("player", context.senderSnapshot().name()),
+                Map.entry("name", context.senderSnapshot().name()),
                 Map.entry("display_name", context.senderSnapshot().displayName()),
+                Map.entry("displayname", context.senderSnapshot().displayName()),
+                Map.entry("nickname", context.senderSnapshot().displayName()),
                 Map.entry("title", resolveTitle(context)),
                 Map.entry("group", groups.primaryGroup(context.sender()).orElse("default")),
+                Map.entry("message", context.message()),
                 Map.entry("uuid", context.senderSnapshot().uniqueId().toString()),
                 Map.entry("world", context.senderSnapshot().worldKey().asString()),
                 Map.entry("x", Integer.toString((int) Math.floor(context.senderSnapshot().x()))),
@@ -134,6 +139,9 @@ public final class TextService {
         }
         if (applyPapi && placeholderApiEnabled) {
             result = PlaceholderAPI.setPlaceholders(context.sender(), result);
+            if (plugin.runtime().stripUnresolvedPlaceholders()) {
+                result = UNRESOLVED_PLACEHOLDER.matcher(result).replaceAll("");
+            }
         }
         return result;
     }
@@ -157,12 +165,15 @@ public final class TextService {
         String result = expandCustomWithoutPlayer(input, new HashSet<>(), 0);
         result = result.replace("{online}", Integer.toString(plugin.onlinePlayers().count()));
         for (String token : List.of(
-                "player", "display_name", "title", "group", "uuid", "world", "x", "y", "z",
+                "player", "name", "display_name", "displayname", "nickname", "title", "group", "message", "uuid", "world", "x", "y", "z",
                 "channel", "channel_display", "radius")) {
             result = result.replace("{" + token + "}", "");
         }
         if (placeholderApiEnabled) {
             result = PlaceholderAPI.setPlaceholders((OfflinePlayer) null, result);
+            if (plugin.runtime().stripUnresolvedPlaceholders()) {
+                result = UNRESOLVED_PLACEHOLDER.matcher(result).replaceAll("");
+            }
         }
         return result;
     }
@@ -193,6 +204,9 @@ public final class TextService {
         if (placeholderApiEnabled
                 && context.sender().hasPermission(plugin.runtime().playerMessagePlaceholdersPermission())) {
             input = PlaceholderAPI.setPlaceholders(context.sender(), input);
+            if (plugin.runtime().stripUnresolvedPlaceholders()) {
+                input = UNRESOLVED_PLACEHOLDER.matcher(input).replaceAll("");
+            }
         }
         Component body;
         String globalColorPermission = plugin.runtime().legacyColorPermission();

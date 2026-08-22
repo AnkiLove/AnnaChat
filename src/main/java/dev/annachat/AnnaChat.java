@@ -69,7 +69,7 @@ public final class AnnaChat extends JavaPlugin {
 
         configManager = new ConfigManager(this);
         configManager.ensureDefaults();
-        startupStep(3, totalSteps, "配置文件检查完成：主配置、频道、格式、称号、交互、过滤、审核、占位符和数据库配置已就绪");
+        startupStep(3, totalSteps, "配置文件检查完成：主配置、频道、格式、称号、分组策略、交互、过滤、审核、占位符和数据库配置已就绪");
 
         text = new TextService(this);
         messages = new MessageService(text);
@@ -110,6 +110,7 @@ public final class AnnaChat extends JavaPlugin {
                 + "，格式=" + formats.count()
                 + "（规则=" + loaded.formatRules().size() + "）"
                 + "，称号规则=" + loaded.titles().rules().size()
+                + "，分组策略=" + loaded.groups().rules().size()
                 + "，审核词条=" + moderation.wordCount()
                 + "，玩家提及=" + (loaded.mentions().enabled() ? "开启" : "关闭")
                 + "，自定义占位符=" + loaded.customPlaceholders().size()

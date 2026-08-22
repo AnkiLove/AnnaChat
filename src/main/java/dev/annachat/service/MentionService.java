@@ -65,11 +65,11 @@ public final class MentionService implements InteractionProvider {
     /**
      * 在发送者线程捕获本条消息实际提及的 UUID，后续不再跨区域读取发送者实体。
      */
-    public void capture(ChatContext context) {
+    public int capture(ChatContext context) {
         MentionSettings current = settings;
         if (!canMention(context.sender(), current)) {
             context.metadata().remove(METADATA_KEY);
-            return;
+            return 0;
         }
         Set<UUID> mentioned = new LinkedHashSet<>();
         MentionScanner.MentionRange range = MentionScanner.next(context.message(), 0);
@@ -86,6 +86,7 @@ public final class MentionService implements InteractionProvider {
         } else {
             context.metadata().put(METADATA_KEY, Set.copyOf(mentioned));
         }
+        return mentioned.size();
     }
 
     /**

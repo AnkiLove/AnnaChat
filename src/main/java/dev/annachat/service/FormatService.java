@@ -24,7 +24,7 @@ public final class FormatService {
         this.interactionService = interactionService;
         register("text", (context, config) -> textService.configuredComponent(
                 context,
-                config.getString("content", ""),
+                content(config),
                 config.getStringList("hover"),
                 config.getString("click.action", ""),
                 config.getString("click.value", ""),
@@ -87,12 +87,23 @@ public final class FormatService {
         FormatDefinition format = formats.get(selectedId);
         if (format == null) throw new IllegalStateException("找不到聊天格式 " + context.channel().formatId());
         Component result = Component.empty();
-        for (FormatDefinition.Part part : format.parts()) {
+        for (int index = 0; index < format.parts().size(); index++) {
+            FormatDefinition.Part part = format.parts().get(index);
             FormatPartProvider provider = providers.get(part.type());
             if (provider == null) throw new IllegalStateException("找不到格式片段提供器 " + part.type());
+            if (index > 0 && !format.partSeparator().isBlank()) {
+                result = result.append(textService.configured(context, format.partSeparator()));
+            }
             result = result.append(provider.render(context, part.configuration()));
         }
         return result;
+    }
+
+    private static String content(org.bukkit.configuration.ConfigurationSection config) {
+        if (config.isList("content")) return String.join("\n", config.getStringList("content"));
+        if (config.contains("content")) return config.getString("content", "");
+        if (config.isList("text")) return String.join("\n", config.getStringList("text"));
+        return config.getString("text", "");
     }
 
     private String selectFormat(ChatContext context, String baseId) {

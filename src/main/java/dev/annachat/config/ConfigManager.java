@@ -26,7 +26,7 @@ import java.util.regex.PatternSyntaxException;
 public final class ConfigManager {
     private static final List<String> FILES = List.of(
             "channels.yml", "formats.yml", "interactions.yml", "filters.yml", "messages.yml",
-            "moderation.yml", "placeholders.yml", "database.yml", "titles.yml"
+            "moderation.yml", "placeholders.yml", "database.yml", "titles.yml", "groups.yml"
     );
 
     private final AnnaChat plugin;
@@ -298,6 +298,7 @@ public final class ConfigManager {
         YamlConfiguration placeholdersFile = loadFile("placeholders.yml");
         YamlConfiguration databaseFile = loadFile("database.yml");
         YamlConfiguration titlesFile = loadFile("titles.yml");
+        YamlConfiguration groupsFile = loadFile("groups.yml");
 
         Map<String, ConfiguredChannel> channels = loadChannels(channelsFile);
         Map<String, FormatDefinition> formats = loadFormats(formatsFile);
@@ -357,6 +358,7 @@ public final class ConfigManager {
                 Map.copyOf(formats),
                 List.copyOf(formatRules),
                 loadTitles(titlesFile),
+                loadGroups(groupsFile),
                 loadInteractions(interactionsFile, textService),
                 loadFilters(filtersFile),
                 loadModeration(moderationFile),
@@ -385,6 +387,7 @@ public final class ConfigManager {
                 mainFile.getString("formatting.hex-color-permission", "annachat.chat.color.hex"),
                 mainFile.getString("formatting.minimessage-permission", "annachat.chat.minimessage"),
                 mainFile.getString("formatting.player-message-placeholders-permission", "annachat.chat.placeholders"),
+                mainFile.getBoolean("formatting.strip-unresolved-placeholders", false),
                 Map.copyOf(customPlaceholders),
                 Map.copyOf(messages),
                 messagesFile,
@@ -489,6 +492,8 @@ public final class ConfigManager {
             String id = rawId.toLowerCase(Locale.ROOT);
             List<Map<?, ?>> rawParts = root.getMapList(rawId + ".parts");
             if (rawParts.isEmpty()) throw new IllegalArgumentException("格式 " + id + " 没有任何片段");
+            String separator = root.getString(rawId + ".part-separator",
+                    root.getString(rawId + ".separator", ""));
             List<FormatDefinition.Part> parts = new ArrayList<>();
             int index = 0;
             for (Map<?, ?> raw : rawParts) {
@@ -496,7 +501,8 @@ public final class ConfigManager {
                 for (Map.Entry<?, ?> entry : raw.entrySet()) {
                     copyValue(partConfig, String.valueOf(entry.getKey()), entry.getValue());
                 }
-                if (raw.containsKey("click")) {
+                normalizeFormatPart(partConfig);
+                if (partConfig.isConfigurationSection("click")) {
                     String action = partConfig.getString("click.action", "");
                     String value = partConfig.getString("click.value", "");
                     if (action.isBlank() || value.isBlank()) {
@@ -511,9 +517,39 @@ public final class ConfigManager {
                 parts.add(new FormatDefinition.Part(type, partConfig));
                 index++;
             }
-            formats.put(id, new FormatDefinition(id, List.copyOf(parts)));
+            formats.put(id, new FormatDefinition(id, separator == null ? "" : separator, List.copyOf(parts)));
         }
         return formats;
+    }
+
+    /** 兼容 text/suggest/run/open/copy 等常见简写，同时统一到内部模型。 */
+    private static void normalizeFormatPart(YamlConfiguration configuration) {
+        if (!configuration.contains("content") && configuration.contains("text")) {
+            configuration.set("content", configuration.get("text"));
+        }
+        if (configuration.isConfigurationSection("click")) return;
+        if (configuration.isString("click")) {
+            String shorthand = configuration.getString("click", "");
+            int separator = shorthand.indexOf(':');
+            if (separator > 0) {
+                configuration.set("click.action", shorthand.substring(0, separator).strip());
+                configuration.set("click.value", shorthand.substring(separator + 1));
+                return;
+            }
+        }
+        Map<String, String> aliases = Map.of(
+                "suggest", "SUGGEST_COMMAND",
+                "run", "RUN_COMMAND",
+                "open", "OPEN_URL",
+                "copy", "COPY_TO_CLIPBOARD"
+        );
+        for (Map.Entry<String, String> entry : aliases.entrySet()) {
+            if (configuration.contains(entry.getKey())) {
+                configuration.set("click.action", entry.getValue());
+                configuration.set("click.value", configuration.getString(entry.getKey(), ""));
+                break;
+            }
+        }
     }
 
     private List<FormatRule> loadFormatRules(YamlConfiguration file) {
@@ -560,6 +596,43 @@ public final class ConfigManager {
         }
         rules.sort(Comparator.comparingInt(TitleSettings.TitleRule::priority));
         return new TitleSettings(enabled, defaultValue, rules);
+    }
+
+    private GroupSettings loadGroups(YamlConfiguration file) {
+        ConfigurationSection root = requiredSection(file, "groups");
+        GroupPolicy defaults = loadGroupPolicy(root.getConfigurationSection("default"));
+        List<GroupSettings.Rule> rules = new ArrayList<>();
+        ConfigurationSection definitions = root.getConfigurationSection("definitions");
+        if (definitions != null) {
+            for (String id : definitions.getKeys(false)) {
+                ConfigurationSection section = requiredSection(definitions, id);
+                if (!section.getBoolean("enabled", true)) continue;
+                rules.add(new GroupSettings.Rule(
+                        section.getInt("priority", 0),
+                        section.getString("permission", ""),
+                        section.getString("group", id),
+                        loadGroupPolicy(section)
+                ));
+            }
+        }
+        return new GroupSettings(
+                root.getBoolean("enabled", true),
+                root.getString("detection-mode", "PERMISSION"),
+                defaults,
+                rules
+        );
+    }
+
+    private static GroupPolicy loadGroupPolicy(ConfigurationSection section) {
+        if (section == null) return GroupPolicy.defaults();
+        return new GroupPolicy(
+                section.getLong("cooldown-millis", -1L),
+                section.getInt("max-message-length", -1),
+                section.getInt("max-mentions", -1),
+                section.getBoolean("bypass-moderation", false),
+                section.getBoolean("bypass-filter", false),
+                section.getBoolean("bypass-cooldown", false)
+        );
     }
 
     private static Map<String, String> loadColorPermissions(YamlConfiguration file) {
